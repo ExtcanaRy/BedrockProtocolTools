@@ -4,13 +4,13 @@ try:
     port = sys.argv[2]
     file = str(sys.argv[3])
     loops = int(sys.argv[4])
-    interval = int(sys.argv[4])
+    interval = float(sys.argv[4])
 except:
     target = str(input("Target: "))
     port = input("Port: ")
     file = str(input("File: "))
     loops = int(input("Loops: "))
-    interval = int(input("Interval(sec): "))
+    interval = float(input("Interval(sec): "))
 for i in range(loops):
     localPort = random.randint(1024, 65535)
     localHostIP = socket.gethostbyname(socket.gethostname())
