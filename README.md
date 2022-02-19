@@ -2,7 +2,7 @@
 # 使用`git clone https://github.com/WillowSauceR/tools`将本项目克隆到本地或直接下载本项目，然后使用python3来运行
 ## scan.py
 ### usage: `python3 scan.py [IP]`
-#### description: 扫描一个IP上的所有BE协议服务器，使用前先使用命令`pip install scapy`来安装依赖，基于scapy，基本不漏服
+#### description: 扫描一个IP上的所有BE协议服务器，使用前建议安装[Npcap](https://npcap.com/dist/npcap-1.60.exe)，然后使用命令`pip install scapy`来安装依赖，基于scapy，基本不漏服
 
 ## send.py 
 ### usage: `python3 send.py [IP] [端口] [载体包文件] [次数] [间隔:秒]`
