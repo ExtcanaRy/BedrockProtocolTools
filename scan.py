@@ -29,6 +29,8 @@ def sendPacket(startNum, count):
             print("BDS Count: " + str(bdsCount))
             print("NK Count: " + str(nkCount))
             print("Geyser Count: " + str(geyserCount))
+            print("Skipped Count: " + str(skipped))
+            print("Error Count: " + str(error))
             _exit(0)
         port += 1
 
@@ -58,24 +60,49 @@ t7.start()
 bdsCount = 0
 nkCount = 0
 geyserCount = 0
-
+skipped = 0
+error = 0
+payloads = []
 
 while True:
     sk_rec = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sk_rec.bind((localHostIP, localHostPort))
     try:
         data, addr = sk_rec.recvfrom(10240)
-        Time = time.strftime('%H:%M:%S')
-        print(f"[{Time} D] {str(data)}")
-        print(f"[{Time} A] {str(addr)}")
+        date = time.strftime('%H:%M:%S')
+        if addr[1] not in payloads:
+            payloads.append(addr[1])
+        else:
+            skipped += 1
+            print(f"[{date} R] Duplicate server found, skipped. Source: {addr[0]}:{addr[1]}")
+            continue
+        infos = []
+        data1 = data.split(b"MCPE")
+        infos_byte = data1[1].split(b";")
+        for info in infos_byte:
+            try:
+                context = info.decode()
+            except:
+                context = str(info)[2:-1]
+            infos.append(context)
+        print("")
+        print(f"[{date} R] Motd: {infos[1]}")
+        print(f"[{date} R] Versin: {infos[3]}/{infos[2]}")
+        print(f"[{date} R] Online: {infos[4]}/{infos[5]}")
+        print(f"[{date} R] Map: {infos[7]}/{infos[8]}")
+        print(f"[{date} R] Port(v4/v6): {infos[10]}/{infos[11]}")
+        print(f"[{date} R] Source: {addr[0]}:{addr[1]}")
         serverCount += 1
-        print(f"[{Time} C] {str(serverCount)}")
+        print(f"[{date} C] {str(serverCount)}")
         if re.search(b"edicated", data):
             bdsCount += 1
         if re.search(b"nukkit", data):
             nkCount += 1
         if re.search(b"eyser", data):
             geyserCount += 1
+        sk_rec.close()
     except:
+        print(f"[{time.strftime('%H:%M:%S')} R] An error occurred, skipped.")
+        error += 1
         pass
 
