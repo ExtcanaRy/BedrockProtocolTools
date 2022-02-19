@@ -4,6 +4,7 @@ import socket, threading, sys, time
 from scapy.all import *
 
 localHostIP = socket.gethostbyname(socket.gethostname())
+localHostPort = randint(1024, 65535)
 BDSIP = str(sys.argv[1])
 motdData = b'\x01\x00\x00\x00\x00$\r\x12\xd3\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x124Vx\n'
 serverCount = 0
@@ -14,7 +15,7 @@ def sendPacket(startNum, count):
         Time = time.strftime('%H:%M:%S')
         if port % 1000 == 0:
             print(f"[{Time} I] Scaning port: {str(port)} ~ {str(port + 1000)}")
-        send(IP(src=localHostIP, dst=BDSIP) / UDP(sport=49132, dport=port) /
+        send(IP(src=localHostIP, dst=BDSIP) / UDP(sport=localHostPort, dport=port) /
              motdData,
              verbose=False)
         if port == 65535:
@@ -61,7 +62,7 @@ geyserCount = 0
 
 while True:
     sk_rec = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sk_rec.bind((localHostIP, randint(1024, 65535)))
+    sk_rec.bind((localHostIP, localHostPort))
     try:
         data, addr = sk_rec.recvfrom(10240)
         Time = time.strftime('%H:%M:%S')
