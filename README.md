@@ -13,7 +13,7 @@
 #### description: motd一个BE服务器，支持自动解析返回的数据
 
 ## scanall.py
-### usage: `python3 scanall`
+### usage: `python3 scanall.py`
 #### description: 扫描全网端口为19132的服，需要配合[wireshark](https://mirrors.tuna.tsinghua.edu.cn/wireshark/win64/Wireshark-win64-3.6.2.exe)抓取返回包
 ##### wireshark参数:
 ##### 捕获过滤器: `not src host 你的局域网IP and udp and port 19132`
