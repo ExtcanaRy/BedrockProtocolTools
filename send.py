@@ -4,7 +4,7 @@ try:
     port = sys.argv[2]
     file = str(sys.argv[3])
     loops = int(sys.argv[4])
-    interval = float(sys.argv[4])
+    interval = float(sys.argv[5])
 except:
     target = str(input("Target: "))
     port = input("Port: ")
