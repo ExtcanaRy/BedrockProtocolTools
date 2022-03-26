@@ -1,5 +1,4 @@
 from random import randint
-import re
 import socket, sys, time
 
 try:
@@ -40,4 +39,5 @@ def recvPacket(sk_send):
     
     sk_send.close()
 
-sendPacket(ip, port)
+if __name__ == "__main__":
+    sendPacket(ip, port)
