@@ -89,7 +89,8 @@ def sendPacket(target, port, file, loops, interval):
             if isDisplayMotd:
                 __import__("motd").sendPacket(target, port)
         except:
-            pass
+            if isDisplayMotd:
+                print(f"[{getTime()}] Target server offline.")
         #print(f"[{getTime()}] Sending packet...")
         try:
             if port == "*":

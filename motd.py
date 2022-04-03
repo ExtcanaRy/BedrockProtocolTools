@@ -1,13 +1,6 @@
 from random import randint
 import socket, sys, time
 
-try:
-    ip = sys.argv[1]
-    port = sys.argv[2]
-except:
-    ip = input("Target: ")
-    port = input("Port: ")
-
 def sendPacket(ip, port):
     sk_send = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sk_send.settimeout(3)
@@ -40,4 +33,10 @@ def recvPacket(sk_send):
     sk_send.close()
 
 if __name__ == "__main__":
+    try:
+        ip = sys.argv[1]
+        port = sys.argv[2]
+    except:
+        ip = input("Target: ")
+        port = input("Port: ")
     sendPacket(ip, port)
