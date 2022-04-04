@@ -1,6 +1,9 @@
 from random import randint
 import socket, sys, time
 
+def getTime():
+    return time.strftime('%H:%M:%S')
+
 def sendPacket(ip, port):
     sk_send = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sk_send.settimeout(3)
@@ -22,13 +25,12 @@ def recvPacket(sk_send):
             except:
                 context = str(info)[2:-1]
             infos.append(context)
-        date = time.strftime('%H:%M:%S')
-        print(f"[{date}] Motd: {infos[1]}")
-        print(f"[{date}] Versin: {infos[3]}/{infos[2]}")
-        print(f"[{date}] Online: {infos[4]}/{infos[5]}")
-        print(f"[{date}] Map: {infos[7]}/{infos[8]}")
-        print(f"[{date}] Port(v4/v6): {infos[10]}/{infos[11]}")
-        print(f"[{date}] Source: {addr[0]}:{addr[1]}")
+        print(f"[{getTime()}] Motd: {infos[1]}")
+        print(f"[{getTime()}] Versin: {infos[3]}/{infos[2]}")
+        print(f"[{getTime()}] Online: {infos[4]}/{infos[5]}")
+        print(f"[{getTime()}] Map: {infos[7]}/{infos[8]}")
+        print(f"[{getTime()}] Port(v4/v6): {infos[10]}/{infos[11]}")
+        print(f"[{getTime()}] Source: {addr[0]}:{addr[1]}")
     
     sk_send.close()
 
@@ -39,4 +41,7 @@ if __name__ == "__main__":
     except:
         ip = input("Target: ")
         port = input("Port: ")
-    sendPacket(ip, port)
+    try:
+        sendPacket(ip, port)
+    except:
+        print(f"[{getTime()}] Timeout! Server may be offline or blocked motd request.")
