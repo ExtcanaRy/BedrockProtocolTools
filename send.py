@@ -9,7 +9,8 @@ try:
     import socks
     import wget
 except:
-    print("Import module error! Please run \"pip install requirements.txt\"")
+    print("Import module error! Please run \"pip install -r requirements.txt\"")
+    os._exit(1)
 
 def getTime():
     return time.strftime('%H:%M:%S')
