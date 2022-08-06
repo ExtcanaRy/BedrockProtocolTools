@@ -5,7 +5,10 @@ from scapy.all import *
 
 localHostIP = socket.gethostbyname(socket.gethostname())
 localHostPort = randint(1024, 65535)
-BDSIP = str(sys.argv[1])
+try:
+    TargetAddr = str(sys.argv[1])
+except:
+    TargetAddr = input("Target IP: ")
 motdData = b'\x01\x00\x00\x00\x00$\r\x12\xd3\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x124Vx\n'
 serverCount = 0
 
@@ -15,7 +18,7 @@ def sendPacket(startNum, count):
         Time = time.strftime('%H:%M:%S')
         if port % 1000 == 0:
             print(f"[{Time} I] Scaning port: {str(port)} ~ {str(port + 1000)}")
-        send(IP(src=localHostIP, dst=BDSIP) / UDP(sport=localHostPort, dport=port) /
+        send(IP(src=localHostIP, dst=TargetAddr) / UDP(sport=localHostPort, dport=port) /
              motdData,
              verbose=False)
         if port == 65535:
