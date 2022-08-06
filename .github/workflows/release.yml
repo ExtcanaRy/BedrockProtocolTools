@@ -27,6 +27,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install pyinstaller
         pip install -r requirements.txt
+        pip uninstall typing
         
     - name: Package the py file as exe
       run: |
