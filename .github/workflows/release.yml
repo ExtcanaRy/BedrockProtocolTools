@@ -35,6 +35,9 @@ jobs:
         pyinstaller -F send.py
         pyinstaller -F scan.py
         pyinstaller -F scanall.py
+        dir
+        cd dist
+        dir
         
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.2
