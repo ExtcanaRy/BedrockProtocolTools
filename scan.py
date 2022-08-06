@@ -68,8 +68,17 @@ while True:
     sk_rec = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sk_rec.bind((localHostIP, localHostPort))
     try:
+    # if True:
         data, addr = sk_rec.recvfrom(10240)
         date = time.strftime('%H:%M:%S')
+        if len(data) <= 30:
+            skipped += 1
+            print(f"[{date} R] data length <= 30, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}")
+            continue
+        if b"MCPE" not in data:
+            skipped += 1
+            print(f"[{date} R] metadata \"MCPE\" not in packet, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}")
+            continue
         if addr[1] not in payloads:
             payloads.append(addr[1])
         else:
@@ -78,6 +87,9 @@ while True:
             continue
         infos = []
         data1 = data.split(b"MCPE")
+        # print("----------------------------------------------------")
+        # print(data1)
+        # print()
         infos_byte = data1[1].split(b";")
         for info in infos_byte:
             try:
@@ -86,19 +98,28 @@ while True:
                 context = str(info)[2:-1]
             infos.append(context)
         print("")
+        # print(len(infos))
         print(f"[{date} R] Motd: {infos[1]}")
         print(f"[{date} R] Versin: {infos[3]}/{infos[2]}")
         print(f"[{date} R] Online: {infos[4]}/{infos[5]}")
-        print(f"[{date} R] Map: {infos[7]}/{infos[8]}")
-        print(f"[{date} R] Port(v4/v6): {infos[10]}/{infos[11]}")
+        try:
+            print(f"[{date} R] Map: {infos[7]}/{infos[8]}")
+        except:
+            print(f"[{date} R] Map info is unavailable.")
+        try:
+            print(f"[{date} R] Port(v4/v6): {infos[10]}/{infos[11]}")
+        except:
+            print(f"[{date} R] Port info is unavailable.")
         print(f"[{date} R] Source: {addr[0]}:{addr[1]}")
         serverCount += 1
         print(f"[{date} C] {str(serverCount)}")
-        if re.search(b"edicated", data):
-            bdsCount += 1
-        if re.search(b"nukkit", data):
+        if len(infos) == 10 or len(infos) == 6:
             nkCount += 1
-        if re.search(b"eyser", data):
+        elif re.search(b"edicated", data):
+            bdsCount += 1
+        elif re.search(b"nukkit", data):
+            nkCount += 1
+        elif re.search(b"eyser", data):
             geyserCount += 1
         sk_rec.close()
     except:

@@ -15,22 +15,27 @@ def sendPacket(ip, port):
 
 def recvPacket(sk_send):
     data, addr = sk_send.recvfrom(10240)
-    if True:
-        infos = []
-        data1 = data.split(b"MCPE")
-        infos_byte = data1[1].split(b";")
-        for info in infos_byte:
-            try:
-                context = info.decode()
-            except:
-                context = str(info)[2:-1]
-            infos.append(context)
-        print(f"[{getTime()}] Motd: {infos[1]}")
-        print(f"[{getTime()}] Versin: {infos[3]}/{infos[2]}")
-        print(f"[{getTime()}] Online: {infos[4]}/{infos[5]}")
+    infos = []
+    data1 = data.split(b"MCPE")
+    infos_byte = data1[1].split(b";")
+    for info in infos_byte:
+        try:
+            context = info.decode()
+        except:
+            context = str(info)[2:-1]
+        infos.append(context)
+    print(f"[{getTime()}] Motd: {infos[1]}")
+    print(f"[{getTime()}] Versin: {infos[3]}/{infos[2]}")
+    print(f"[{getTime()}] Online: {infos[4]}/{infos[5]}")
+    try:
         print(f"[{getTime()}] Map: {infos[7]}/{infos[8]}")
+    except:
+        print(f"[{getTime()}] Map info is unavailable.")
+    try:
         print(f"[{getTime()}] Port(v4/v6): {infos[10]}/{infos[11]}")
-        print(f"[{getTime()}] Source: {addr[0]}:{addr[1]}")
+    except:
+        print(f"[{getTime()}] Port info is unavailable.")
+    print(f"[{getTime()}] Source: {addr[0]}:{addr[1]}")
     
     sk_send.close()
 
