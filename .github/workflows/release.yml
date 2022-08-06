@@ -35,6 +35,7 @@ jobs:
         pyinstaller -F send.py
         pyinstaller -F scan.py
         pyinstaller -F scanall.py
+        echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
         
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.2
@@ -48,4 +49,5 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
+        tag_name: ${{ steps.tag.outputs.release_tag }}
         files: ./dist/MCBEprotocolTools.zip
