@@ -29,8 +29,7 @@ jobs:
         
     - name: Package the py file as exe
       run: |
-        pip install pyinstaller
-        pip uninstall typing
+        pip uninstall -y typing
         pyinstaller -F motd.py
         pyinstaller -F send.py
         pyinstaller -F scan.py
