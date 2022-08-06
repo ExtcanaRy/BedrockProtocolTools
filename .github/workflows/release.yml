@@ -30,8 +30,8 @@ jobs:
         pip uninstall -y typing
         
     - name: Package the py file as exe
-      run: |
       id: tag
+      run: |
         pyinstaller -F motd.py
         pyinstaller -F send.py
         pyinstaller -F scan.py
