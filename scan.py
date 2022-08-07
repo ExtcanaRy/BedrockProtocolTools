@@ -34,6 +34,7 @@ def sendPacket(startNum, count):
             print("Geyser Count: " + str(geyserCount))
             print("Skipped Count: " + str(skipped))
             print("Error Count: " + str(error))
+            print("Total Player Count: " + str(totalPlayerCount))
             _exit(0)
         port += 1
 
@@ -66,7 +67,7 @@ geyserCount = 0
 skipped = 0
 error = 0
 payloads = []
-
+totalPlayerCount = 0
 while True:
     sk_rec = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sk_rec.bind((localHostIP, localHostPort))
@@ -115,7 +116,9 @@ while True:
             print(f"[{date} R] Port info is unavailable.")
         print(f"[{date} R] Source: {addr[0]}:{addr[1]}")
         serverCount += 1
+        totalPlayerCount += int(infos[4])
         print(f"[{date} C] {str(serverCount)}")
+        print(f"[{date} P] {totalPlayerCount}")
         if len(infos) == 10 or len(infos) == 6:
             nkCount += 1
         elif re.search(b"edicated", data):
