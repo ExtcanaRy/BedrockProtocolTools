@@ -69,10 +69,9 @@ error = 0
 payloads = []
 totalPlayerCount = 0
 while True:
-    sk_rec = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sk_rec.bind((localHostIP, localHostPort))
     try:
-    # if True:
+        sk_rec = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sk_rec.bind((localHostIP, localHostPort))
         data, addr = sk_rec.recvfrom(10240)
         date = time.strftime('%H:%M:%S')
         if len(data) <= 30:
