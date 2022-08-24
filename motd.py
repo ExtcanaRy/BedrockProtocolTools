@@ -18,6 +18,9 @@ def recvPacket(sk_send):
     infos = []
     data1 = data.split(b"MCPE")
     infos_byte = data1[1].split(b";")
+    # print(data)
+    # print(data1)
+    # print(infos_byte)
     for info in infos_byte:
         try:
             context = info.decode()

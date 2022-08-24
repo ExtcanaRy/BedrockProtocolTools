@@ -79,7 +79,10 @@ def createSocket():
 
 def sendPacket(target, port, file, loops, interval):
     for i in range(loops):
-        localPort, socketSend = createSocket()
+        try:
+            localPort, socketSend = createSocket()
+        except:
+            continue
         payloads = None
         try:
             payloads = marshal.load(open(file, "rb"))
