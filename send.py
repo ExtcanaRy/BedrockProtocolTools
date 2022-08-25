@@ -4,6 +4,7 @@ import socket
 import sys
 import time
 import os
+from api import getLocalHostIP, getTime
 
 try:
     import socks
@@ -12,13 +13,14 @@ except:
     print("Import module error! Please run \"pip install -r requirements.txt\"")
     os._exit(1)
 
-def getTime():
-    return time.strftime('%H:%M:%S')
+localHostIP = getLocalHostIP()
+
 
 def getProxy() -> list:
     if not os.path.exists(r"socks5.txt"):
         print(f"[{getTime()}] Downloading proxy list...")
-        wget.download("https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/socks5.txt")
+        wget.download(
+            "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/socks5.txt")
         print(f"")
         print(f"[{getTime()}] Proxy list downloaded!")
 
@@ -29,6 +31,7 @@ def getProxy() -> list:
         proxyIP, proxyPort = proxy.rsplit(':', 1)
         #print(proxyIP, ":", proxyPort)
         return proxyIP, int(proxyPort)
+
 
 def getOptions():
     try:
@@ -60,11 +63,12 @@ def getOptions():
     print()
     return target, int(port), file, int(loops), float(interval), proxyUsed, isDisplayMotd
 
+
 target, port, file, loops, interval, proxyUsed, isDisplayMotd = getOptions()
+
 
 def createSocket():
     localPort = random.randint(1024, 65535)
-    localHostIP = socket.gethostbyname(socket.gethostname())
     proxyIP, proxyPort = None, None
     if proxyUsed:
         socketSend = socks.socksocket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -76,6 +80,7 @@ def createSocket():
         socketSend = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         socketSend.bind((str(localHostIP), localPort))
     return localPort, socketSend
+
 
 def sendPacket(target, port, file, loops, interval):
     for i in range(loops):
@@ -104,12 +109,14 @@ def sendPacket(target, port, file, loops, interval):
             else:
                 for line in payloads:
                     socketSend.sendto(line, (target, int(port)))
-            print(f"[{getTime()}] Loop ", str(i)," done, used local port: ", str(localPort), "\n")
+            print(f"[{getTime()}] Loop ", str(i),
+                  " done, used local port: ", str(localPort), "\n")
         except:
-            print(f"[{getTime()}] Loop ", str(i)," error! Skip...", "\n")
+            print(f"[{getTime()}] Loop ", str(i), " error! Skip...", "\n")
             pass
         if i+1 < loops:
             time.sleep(interval)
+
 
 if __name__ == "__main__":
     sendPacket(target, port, file, loops, interval)

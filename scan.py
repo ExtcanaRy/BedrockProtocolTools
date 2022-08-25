@@ -1,16 +1,22 @@
 from os import _exit
 from random import randint
-import socket, threading, sys, time
+import socket
+import threading
+import sys
+import time
 from scapy.all import *
+from api import getLocalHostIP
 
-localHostIP = socket.gethostbyname(socket.gethostname())
+localHostIP = getLocalHostIP()
 localHostPort = randint(1024, 65535)
+
 try:
     TargetAddr = str(sys.argv[1])
 except:
     TargetAddr = input("Target IP: ")
 motdData = b'\x01\x00\x00\x00\x00$\r\x12\xd3\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x124Vx\n'
 serverCount = 0
+
 
 def sendPacket(startNum, count):
     port = startNum
@@ -76,17 +82,20 @@ while True:
         date = time.strftime('%H:%M:%S')
         if len(data) <= 30:
             skipped += 1
-            print(f"[{date} R] data length <= 30, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}")
+            print(
+                f"[{date} R] data length <= 30, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}")
             continue
         if b"MCPE" not in data:
             skipped += 1
-            print(f"[{date} R] metadata \"MCPE\" not in packet, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}")
+            print(
+                f"[{date} R] metadata \"MCPE\" not in packet, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}")
             continue
         if addr[1] not in payloads:
             payloads.append(addr[1])
         else:
             skipped += 1
-            print(f"[{date} R] Duplicate server found, skipped. Source: {addr[0]}:{addr[1]}")
+            print(
+                f"[{date} R] Duplicate server found, skipped. Source: {addr[0]}:{addr[1]}")
             continue
         infos = []
         data1 = data.split(b"MCPE")
@@ -131,4 +140,3 @@ while True:
         print(f"[{time.strftime('%H:%M:%S')} R] An error occurred, skipped.")
         error += 1
         pass
-

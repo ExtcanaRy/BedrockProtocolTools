@@ -1,17 +1,19 @@
 from random import randint
-import socket, sys, time
+import socket
+import sys
+from api import getLocalHostIP, getTime
+localHostIP = getLocalHostIP()
 
-def getTime():
-    return time.strftime('%H:%M:%S')
 
 def sendPacket(ip, port):
     sk_send = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sk_send.settimeout(3)
-    sk_send.bind((socket.gethostbyname(socket.gethostname()), randint(1024, 65535)))
+    sk_send.bind((localHostIP, randint(1024, 65535)))
     sk_send.sendto(
         b'\x01\x00\x00\x00\x00$\r\x12\xd3\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x124Vx\n',
         (str(ip), int(port)))
     recvPacket(sk_send)
+
 
 def recvPacket(sk_send):
     data, addr = sk_send.recvfrom(10240)
@@ -39,8 +41,9 @@ def recvPacket(sk_send):
     except:
         print(f"[{getTime()}] Port info is unavailable.")
     print(f"[{getTime()}] Source: {addr[0]}:{addr[1]}")
-    
+
     sk_send.close()
+
 
 if __name__ == "__main__":
     try:
@@ -52,4 +55,5 @@ if __name__ == "__main__":
     try:
         sendPacket(ip, port)
     except:
-        print(f"[{getTime()}] Timeout! Server may be offline or blocked motd request.")
+        print(
+            f"[{getTime()}] Timeout! Server may be offline or blocked motd request.")

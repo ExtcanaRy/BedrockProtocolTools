@@ -1,6 +1,9 @@
-import socket, time
+import socket
+import time
+from api import getLocalHostIP
 
-localHostIP = socket.gethostbyname(socket.gethostname())
+localHostIP = getLocalHostIP()
+
 
 def sendPacket():
     sk_send = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -8,15 +11,16 @@ def sendPacket():
     for a in range(256):
         print(f"Scanning range: {str(a)}.0.0.0 ~ 255.255.255.255")
         for b in range(256):
-            print(f"Scaning range: {str(a)}.{str(b)}.0.0 ~ {str(a)}.255.255.255")
+            print(
+                f"Scaning range: {str(a)}.{str(b)}.0.0 ~ {str(a)}.255.255.255")
             for c in range(256):
                 #print(f"Scaning range: {str(a)}.{str(b)}.{str(c)}.0 ~ {str(a)}.{str(b)}.255.255")
                 for d in range(256):
                     try:
                         IP = f"{str(a)}.{str(b)}.{str(c)}.{str(d)}"
                         sk_send.sendto(
-                        b'\x01\x00\x00\x00\x00$\r\x12\xd3\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x124Vx\n',
-                        (IP, 19132))
+                            b'\x01\x00\x00\x00\x00$\r\x12\xd3\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x124Vx\n',
+                            (IP, 19132))
                     except:
                         continue
     sk_send.close()
@@ -35,6 +39,7 @@ def recPacket():
             print(addr)
         except:
             pass
+
 
 sendPacket()
 #    recPacket()

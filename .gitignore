@@ -1,1 +1,5 @@
 socks5.txt
+__pycache__/motd.cpython-37.pyc
+.gitignore
+t.py
+__pycache__/api.cpython-37.pyc
