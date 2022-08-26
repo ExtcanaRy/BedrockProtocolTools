@@ -7,30 +7,14 @@ import os
 from api import getLocalHostIP, getTime
 
 try:
-    import socks
     import wget
+    import socks
+    import requests
 except:
     print("Import module error! Please run \"pip install -r requirements.txt\"")
     os._exit(1)
 
 localHostIP = getLocalHostIP()
-
-
-def getProxy() -> list:
-    if not os.path.exists(r"socks5.txt"):
-        print(f"[{getTime()}] Downloading proxy list...")
-        wget.download(
-            "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/socks5.txt")
-        print(f"")
-        print(f"[{getTime()}] Proxy list downloaded!")
-
-    with open("socks5.txt", "r") as file:
-        socksList = file.readlines()
-        randomIndex = random.randint(0, len(socksList) - 1)
-        proxy = socksList[randomIndex]
-        proxyIP, proxyPort = proxy.rsplit(':', 1)
-        #print(proxyIP, ":", proxyPort)
-        return proxyIP, int(proxyPort)
 
 
 def getOptions():
@@ -40,17 +24,21 @@ def getOptions():
         file = sys.argv[3]
         loops = sys.argv[4]
         interval = sys.argv[5]
-        proxyUsed = sys.argv[6]
-        isDisplayMotd = sys.argv[7]
+        isDisplayMotd = sys.argv[6]
+        proxyUsed = sys.argv[7]
     except:
         target = input("Target(IP/Domain): ")
         port = input("Port(Number): ")
         file = input("File(Path): ")
         loops = input("Loops(Number): ")
         interval = input("Interval(sec): ")
-        proxyUsed = input("Proxy(y/n): ")
         isDisplayMotd = input("Display Motd(y/n): ")
+        proxyUsed = input("Proxy(y/n): ")
     if proxyUsed == "y":
+        try:
+            proxyCountry = sys.argv[8]
+        except:
+            proxyCountry = input("ProxyCountry(like cn, ru, us): ")
         print(f"[{getTime()}] Proxy mode is under development and deprecated!")
         proxyUsed = True
     else:
@@ -61,10 +49,34 @@ def getOptions():
     else:
         isDisplayMotd = False
     print()
-    return target, int(port), file, int(loops), float(interval), proxyUsed, isDisplayMotd
+    return target, int(port), file, int(loops), float(interval), proxyUsed, isDisplayMotd, proxyCountry
 
 
-target, port, file, loops, interval, proxyUsed, isDisplayMotd = getOptions()
+target, port, file, loops, interval, proxyUsed, isDisplayMotd, proxyCountry = getOptions()
+
+
+def getProxy() -> list:
+    try:
+        print(f"[{getTime()}] Trying to get proxy data from api...")
+        proxyInfo = requests.get(
+            f"https://www.proxyscan.io/api/proxy?last_check=3600&uptime=&ping=&limit=1&type=socks5&format=json&country={proxyCountry}").json()
+        proxyIP = proxyInfo[0]['Ip']
+        proxyPort = proxyInfo[0]['Port']
+        return proxyIP, int(proxyPort)
+    except:
+        if not os.path.exists(r"socks5.txt"):
+            print(f"[{getTime()}] Request api failed. Downloading proxy list...")
+            wget.download(
+                "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/socks5.txt")
+            print(f"")
+            print(f"[{getTime()}] Proxy list downloaded!")
+        with open("socks5.txt", "r") as file:
+            socksList = file.readlines()
+            randomIndex = random.randint(0, len(socksList) - 1)
+            proxy = socksList[randomIndex]
+            proxyIP, proxyPort = proxy.rsplit(':', 1)
+            #print(proxyIP, ":", proxyPort)
+            return proxyIP, int(proxyPort)
 
 
 def createSocket():
