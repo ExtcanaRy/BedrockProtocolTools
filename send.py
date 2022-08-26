@@ -34,11 +34,12 @@ def getOptions():
         interval = input("Interval(sec): ")
         isDisplayMotd = input("Display Motd(y/n): ")
         proxyUsed = input("Proxy(y/n): ")
+    proxyCountry = ""
     if proxyUsed == "y":
         try:
             proxyCountry = sys.argv[8]
         except:
-            proxyCountry = input("ProxyCountry(like cn, ru, us): ")
+            proxyCountry = input("ProxyCountry(like cn, ru, us or enter to use all): ")
         print(f"[{getTime()}] Proxy mode is under development and deprecated!")
         proxyUsed = True
     else:
