@@ -45,6 +45,8 @@ jobs:
         echo "@echo off" >> .\OpenMe.bat
         echo "echo Type a program name here to run." >> .\OpenMe.bat
         echo "echo Such as scan, motd, send and scanall." >> .\OpenMe.bat
+        echo "cmd" >> .\OpenMe.bat
+        echo "@echo on" >> .\OpenMe.bat
 
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.2
