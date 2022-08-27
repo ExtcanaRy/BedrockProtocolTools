@@ -4,6 +4,7 @@ import socket
 import sys
 import time
 import os
+from motd import sendPacket as sendMotdPacket
 from api import getLocalHostIP, getTime
 
 try:
@@ -109,7 +110,7 @@ def sendPacket(target, port, file, loops, interval):
             sys.exit()
         try:
             if isDisplayMotd:
-                __import__("motd").sendPacket(target, port)
+                sendMotdPacket(target, port)
         except:
             if isDisplayMotd:
                 print(f"[{getTime()}] Target server offline.")
