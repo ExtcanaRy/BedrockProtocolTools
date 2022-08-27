@@ -41,7 +41,7 @@ jobs:
         cmd
         chcp 65001
         cd D:\a\tools\tools\dist\
-        type nul >> .\OpenMe.bat
+        cd . >> .\OpenMe.bat
         echo @echo off >> .\OpenMe.bat
         echo echo Type a program name here to run. >> .\OpenMe.bat
         echo echo Such as scan, motd, send and scanall. >> .\OpenMe.bat
