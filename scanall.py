@@ -33,7 +33,7 @@ def recPacket():
         try:
             sk_rec = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sk_rec.settimeout(0.1)
-            sk_rec.bind(("192.168.1.233", 19132))
+            sk_rec.bind((localHostIP, 19132))
             data, addr = sk_rec.recvfrom(10240)
             print(data)
             print(addr)
