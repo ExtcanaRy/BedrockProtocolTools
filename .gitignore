@@ -1,7 +1,4 @@
-socks5.txt
 __pycache__
 .gitignore
 test.py
-result.txt
-targetList.txt
-targetListNmap.txt
+*.txt

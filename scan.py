@@ -128,8 +128,8 @@ def startThreads():
         tmpServerCount = serverCount
         if timeout:
             time.sleep(timeout)
-        if tmpServerCount == serverCount:
-            stopThread = True
+            if tmpServerCount == serverCount:
+                stopThread = True
         while threading.enumerate().__len__() != 2:  # main and itself
             time.sleep(1)
 
