@@ -1,5 +1,7 @@
 socks5.txt
-__pycache__/motd.cpython-37.pyc
+__pycache__
 .gitignore
-t.py
-__pycache__/api.cpython-37.pyc
+test.py
+result.txt
+targetList.txt
+targetListNmap.txt
