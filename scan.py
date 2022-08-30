@@ -14,19 +14,21 @@ localHostIP = getLocalHostIP()
 localHostPort = randint(1024, 65535)
 
 try:
-    TargetAddr = str(sys.argv[1])
-    verboseMode = str(sys.argv[2])
+    TargetAddr = sys.argv[1]
+    portRange = sys.argv[2]
+    verboseMode = sys.argv[3]
 except:
     TargetAddr = input("Target IP: ")
+    portRange = input("Port range(like 1145-1919 and all): ")
     verboseMode = input("Show verbose info(y/n): ")
 
 try:
-    timeout = int(sys.argv[3])
+    timeout = int(sys.argv[4])
 except:
     timeout = None
 
 try:
-    fileName = str(sys.argv[4])
+    fileName = str(sys.argv[5])
 except:
     fileName = ""
 
@@ -69,33 +71,40 @@ def getIpList(ip: str):
         return [ip]
 
 
-def sendPacket(startNum, count, ip):
-    port = startNum
+def sendPacket(startPort, count, ip):
+    port = startPort
     while True:
         if stopThread:
             break
         Time = time.strftime('%H:%M:%S')
-        if port % 1000 == 0 and verboseMode == "y":
-            print(f"[{Time} I] Scaning port: {str(port)} ~ {str(port + 1000)}")
+        if port % int(count / 5) == 0 and verboseMode == "y":
+            print(f"[{Time} I] Scaning port: {str(port)} ~ {str(port + int(count / 5))}")
         send(IP(src=localHostIP, dst=ip) / UDP(sport=localHostPort, dport=port) /
              motdData,
              verbose=False)
-        if port == 65535:
+        if port == startPort + count - 1:
             if verboseMode == "y":
-                print(f"[{Time} I] Port {startNum} ~ 65535 Done")
-            while True:
-                if threading.enumerate().__len__() == 2:
-                    break
-                time.sleep(1)
-        elif port == startNum + count - 1:
-            if verboseMode == "y":
-                print(f"[{Time} I] Port {startNum} ~ {startNum + count} Done")
+                print(f"[{Time} I] Port {startPort} ~ {startPort + count} Done")
             break
         port += 1
 
 
 def startThreads():
     global stopThread
+    if "-" in portRange:
+        portRangeStart = int(portRange.split("-")[0])
+        portRangeEnd = int(portRange.split("-")[1])
+    else:
+        portRangeStart = 0
+        portRangeEnd = 65535
+    portCount = portRangeEnd - portRangeStart
+    if portCount < 7:
+        portCount += 7
+    singleThreadProcPort = (portCount - (portCount % 7)) / 7
+    portStartList = []
+    for i in range(7):
+        portStartList.append(int(portRangeStart))
+        portRangeStart += singleThreadProcPort
     ipList = getIpList(TargetAddr)
     for ip in ipList:
         time.sleep(1)
@@ -104,27 +113,14 @@ def startThreads():
         print(
             f"[{time.strftime('%H:%M:%S')} I] Scaning target: {ip}")
         print()
-        t1 = threading.Thread(target=sendPacket, args=(0, 10000, ip))
-        t2 = threading.Thread(target=sendPacket, args=(10000, 10000, ip))
-        t3 = threading.Thread(target=sendPacket, args=(20000, 10000, ip))
-        t4 = threading.Thread(target=sendPacket, args=(30000, 10000, ip))
-        t5 = threading.Thread(target=sendPacket, args=(40000, 10000, ip))
-        t6 = threading.Thread(target=sendPacket, args=(50000, 10000, ip))
-        t7 = threading.Thread(target=sendPacket, args=(60000, 5535, ip))
-        t1.setDaemon(True)
-        t2.setDaemon(True)
-        t3.setDaemon(True)
-        t4.setDaemon(True)
-        t5.setDaemon(True)
-        t6.setDaemon(True)
-        t7.setDaemon(True)
-        t1.start()
-        t2.start()
-        t3.start()
-        t4.start()
-        t5.start()
-        t6.start()
-        t7.start()
+        for portStart in portStartList:
+            time.sleep(1)
+            if portStart == portStartList[-1]:
+                t1 = threading.Thread(target=sendPacket, args=(portStart, int(singleThreadProcPort + (portCount % 7)), ip))
+            else:
+                t1 = threading.Thread(target=sendPacket, args=(portStart, int(singleThreadProcPort), ip))
+            t1.setDaemon(True)
+            t1.start()
         tmpServerCount = serverCount
         if timeout:
             time.sleep(timeout)
@@ -220,8 +216,10 @@ while True:
         elif re.search(b"eyser", data):
             geyserCount += 1
         sk_rec.close()
-    except OSError:
-        pass
+    except OSError as info:
+        if verboseMode == "y":
+            print(f"[{time.strftime('%H:%M:%S')} R] {info}, skipped.")
+        error += 1
     except Exception as info:
         print(f"[{time.strftime('%H:%M:%S')} R] {info}, skipped.")
         error += 1
