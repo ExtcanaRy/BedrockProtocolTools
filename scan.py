@@ -107,14 +107,12 @@ def startThreads():
         portRangeStart += singleThreadProcPort
     ipList = getIpList(TargetAddr)
     for ip in ipList:
-        time.sleep(1)
         stopThread = False
         print()
         print(
             f"[{time.strftime('%H:%M:%S')} I] Scaning target: {ip}")
         print()
         for portStart in portStartList:
-            time.sleep(1)
             if portStart == portStartList[-1]:
                 t1 = threading.Thread(target=sendPacket, args=(portStart, int(singleThreadProcPort + (portCount % 7)), ip))
             else:
