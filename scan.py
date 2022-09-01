@@ -42,8 +42,8 @@ def getIpList(ip: str):
     if os.path.exists(TargetAddr):
         with open(TargetAddr, "r") as file:
             for ip in file.readlines():
-                ipList.append(ip.split(" | ")[2])
-                # ipList.append(ip[:-1])
+                # ipList.append(ip.split(" | ")[2])
+                ipList.append(ip[:-1])
             return ipList
     try:
         int(ip[-1])
