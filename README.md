@@ -6,7 +6,7 @@
 
 ## scan.py
 
-### 使用方法: `python3 scan.py [目标地址] [端口范围: 如1145-1919或all] [是否启用详细输出] [可选:超时时间，单位为秒，默认无限] [可选:保存结果的文件名]`
+### 使用方法: `python3 scan.py [目标地址] [端口范围: 如1145-1919或all] [是否启用详细输出] [可选:超时时间，单位为秒，填0为不限] [可选:保存结果的文件名]`
 
 #### 描述: 扫描IP上的所有BE协议服务器，使用前建议安装[Npcap](https://npcap.com/dist/npcap-1.60.exe)，然后使用命令 `pip install scapy`来安装依赖，基于scapy，基本不漏服
 
@@ -25,15 +25,3 @@
 ### 使用方法: `python3 motd.py [目标地址] [端口]`
 
 #### 描述: motd一个BE服务器，支持自动解析返回的数据
-
-## scanall.py
-
-### 使用方法: `python3 scanall.py`
-
-#### 描述: 扫描全网端口为19132的服，需要配合[wireshark](https://mirrors.tuna.tsinghua.edu.cn/wireshark/win64/Wireshark-win64-3.6.2.exe)抓取返回包
-
-##### wireshark参数:
-
-##### 捕获过滤器: `not src host 你的局域网IP and udp and port 19132`
-
-##### 显示过滤器: `udp.length > 75 && ip.src == 0.0.0.0/0`
