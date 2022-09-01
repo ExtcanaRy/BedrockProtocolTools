@@ -13,3 +13,14 @@ def getLocalHostIP():
 
 def getTime():
     return time.strftime('%H:%M:%S')
+
+def log(*content, level: str = "INFO", info: str = ""):
+    date = time.strftime('%H:%M:%S')
+    strs = ""
+    for string in content:
+        strs += str(string)
+    content = strs[0:]
+    if info != "":
+        print(f"[{date} {info}] {content}")
+    else:
+        print(f"[{date}] {content}")

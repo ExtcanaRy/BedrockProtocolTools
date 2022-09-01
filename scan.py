@@ -2,16 +2,17 @@ import socket
 import sys
 import threading
 import time
-from os import _exit
+import os
+import re
 from random import randint
 
-from scapy.all import *
-from scapy.layers.inet import IP, UDP
-
-from api import getLocalHostIP
+from api import getLocalHostIP, log
 
 localHostIP = getLocalHostIP()
 localHostPort = randint(1024, 65535)
+
+socketSendRecv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+socketSendRecv.bind((localHostIP, localHostPort))
 
 try:
     TargetAddr = sys.argv[1]
@@ -25,7 +26,7 @@ except:
 try:
     timeout = int(sys.argv[4])
 except:
-    timeout = None
+    timeout = 0
 
 try:
     fileName = str(sys.argv[5])
@@ -41,7 +42,8 @@ def getIpList(ip: str):
     if os.path.exists(TargetAddr):
         with open(TargetAddr, "r") as file:
             for ip in file.readlines():
-                ipList.append(ip[:-1])
+                ipList.append(ip.split(" | ")[2])
+                # ipList.append(ip[:-1])
             return ipList
     try:
         int(ip[-1])
@@ -71,154 +73,134 @@ def getIpList(ip: str):
         return [ip]
 
 
-def sendPacket(startPort, count, ip):
-    port = startPort
+def sendPacket(portStart, portEnd, dstAddr):
+    dstPort = portStart
     while True:
         if stopThread:
             break
-        Time = time.strftime('%H:%M:%S')
-        if port % int(count / 5) == 0 and verboseMode == "y":
-            print(f"[{Time} I] Scaning port: {str(port)} ~ {str(port + int(count / 5))}")
-        send(IP(src=localHostIP, dst=ip) / UDP(sport=localHostPort, dport=port) /
-             motdData,
-             verbose=False)
-        if port == startPort + count - 1:
+        if dstPort % int(portEnd / 5) == 0 and verboseMode == "y":
+            log(f"Scaning port: {str(dstPort)} ~ {str(dstPort + int(portEnd / 5))}", info = "I")
+        socketSendRecv.sendto(motdData, (dstAddr, dstPort))
+        if dstPort == portStart + portEnd - 1:
             if verboseMode == "y":
-                print(f"[{Time} I] Port {startPort} ~ {startPort + count} Done")
+                log(f"Port {portStart} ~ {portStart + portEnd} Done", info = "I")
             break
-        port += 1
+        dstPort += 1
 
 
 def startThreads():
     global stopThread
     if "-" in portRange:
-        portRangeStart = int(portRange.split("-")[0])
-        portRangeEnd = int(portRange.split("-")[1])
+        portStart = int(portRange.split("-")[0])
+        portEnd = int(portRange.split("-")[1])
     else:
-        portRangeStart = 0
-        portRangeEnd = 65535
-    portCount = portRangeEnd - portRangeStart
-    if portCount < 7:
-        portCount += 7
-    singleThreadProcPort = (portCount - (portCount % 7)) / 7
-    portStartList = []
-    for i in range(7):
-        portStartList.append(int(portRangeStart))
-        portRangeStart += singleThreadProcPort
+        portStart = 0
+        portEnd = 65535
     ipList = getIpList(TargetAddr)
-    for ip in ipList:
+    for dstAddr in ipList:
         stopThread = False
         print()
-        print(
-            f"[{time.strftime('%H:%M:%S')} I] Scaning target: {ip}")
+        log(f"Scaning target: {dstAddr}", info = "I")
         print()
-        for portStart in portStartList:
-            if portStart == portStartList[-1]:
-                t1 = threading.Thread(target=sendPacket, args=(portStart, int(singleThreadProcPort + (portCount % 7)), ip))
-            else:
-                t1 = threading.Thread(target=sendPacket, args=(portStart, int(singleThreadProcPort), ip))
-            t1.setDaemon(True)
-            t1.start()
+        # sendPacket(portStart, portEnd, dstAddr)
+        t1 = threading.Thread(target=sendPacket, args=(portStart, portEnd, dstAddr))
+        t1.setDaemon(True)
+        t1.start()
         tmpServerCount = serverCount
-        if timeout:
+        if timeout != 0:
             time.sleep(timeout)
             if tmpServerCount == serverCount:
                 stopThread = True
         while threading.enumerate().__len__() != 2:  # main and itself
             time.sleep(1)
 
-    print("BE Server Count: " + str(serverCount))
-    print("BDS Count: " + str(bdsCount))
-    print("NK Count: " + str(nkCount))
-    print("Geyser Count: " + str(geyserCount))
-    print("Skipped Count: " + str(skipped))
-    print("Error Count: " + str(error))
-    print("Total Player Count: " + str(totalPlayerCount))
-    _exit(0)
+    log("BE Server Count: " + str(serverCount), info = "I")
+    log("BDS Count: " + str(bdsCount), info = "I")
+    log("NK Count: " + str(nkCount), info = "I")
+    log("Geyser Count: " + str(geyserCount), info = "I")
+    log("Skipped Count: " + str(skipped), info = "I")
+    log("Error Count: " + str(error), info = "I")
+    log("Total Player Count: " + str(totalPlayerCount), info = "I")
+    os._exit(0)
 
+if __name__ == "__main__":
+    t = threading.Thread(target=startThreads)
+    t.setDaemon(True)
+    t.start()
 
-t = threading.Thread(target=startThreads)
-t.setDaemon(True)
-t.start()
-
-bdsCount = 0
-nkCount = 0
-geyserCount = 0
-skipped = 0
-error = 0
-payloads = []
-totalPlayerCount = 0
-while True:
-    try:
-        sk_rec = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sk_rec.bind((localHostIP, localHostPort))
-        data, addr = sk_rec.recvfrom(10240)
-        date = time.strftime('%H:%M:%S')
-        if len(data) <= 30:
-            skipped += 1
-            print(
-                f"[{date} R] data length <= 30, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}")
-            continue
-        if b"MCPE" not in data:
-            skipped += 1
-            print(
-                f"[{date} R] metadata \"MCPE\" not in packet, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}")
-            continue
-        if addr[1] not in payloads:
-            payloads.append(addr[1])
-        else:
-            skipped += 1
-            print(
-                f"[{date} R] Duplicate server found, skipped. Source: {addr[0]}:{addr[1]}")
-            continue
-        infos = []
-        data1 = data.split(b"MCPE")
-        # print("----------------------------------------------------")
-        # print(data1)
-        # print()
-        infos_byte = data1[1].split(b";")
-        for info in infos_byte:
+    bdsCount = 0
+    nkCount = 0
+    geyserCount = 0
+    skipped = 0
+    error = 0
+    payloads = []
+    totalPlayerCount = 0
+    while True:
+        try:
+            data, addr = socketSendRecv.recvfrom(10240)
+            date = time.strftime('%H:%M:%S')
+            if len(data) <= 30:
+                skipped += 1
+                log(f"data length <= 30, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}", info = "R")
+                continue
+            if b"MCPE" not in data:
+                skipped += 1
+                log(f"metadata \"MCPE\" not in packet, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}", info = "R")
+                continue
+            if addr not in payloads:
+                payloads.append(addr)
+            else:
+                skipped += 1
+                log(f"Duplicate server found, skipped. Source: {addr[0]}:{addr[1]}", info = "R")
+                continue
+            infos = []
+            data1 = data.split(b"MCPE")
+            # log("----------------------------------------------------")
+            # log(data1)
+            # log()
+            infos_byte = data1[1].split(b";")
+            for info in infos_byte:
+                try:
+                    context = info.decode()
+                except:
+                    context = str(info)[2:-1]
+                infos.append(context)
+            # log(len(infos))
+            log(f"Motd: {infos[1]}", info = "R")
+            log(f"Versin: {infos[3]}/{infos[2]}", info = "R")
+            log(f"Online: {infos[4]}/{infos[5]}", info = "R")
             try:
-                context = info.decode()
+                log(f"Map: {infos[7]}/{infos[8]}", info = "R")
             except:
-                context = str(info)[2:-1]
-            infos.append(context)
-        print("")
-        # print(len(infos))
-        print(f"[{date} R] Motd: {infos[1]}")
-        print(f"[{date} R] Versin: {infos[3]}/{infos[2]}")
-        print(f"[{date} R] Online: {infos[4]}/{infos[5]}")
-        try:
-            print(f"[{date} R] Map: {infos[7]}/{infos[8]}")
-        except:
-            print(f"[{date} R] Map info is unavailable.")
-        try:
-            print(f"[{date} R] Port(v4/v6): {infos[10]}/{infos[11]}")
-        except:
-            print(f"[{date} R] Port info is unavailable.")
-        print(f"[{date} R] Source: {addr[0]}:{addr[1]}")
-        serverCount += 1
-        totalPlayerCount += int(infos[4])
-        print(f"[{date} C] {str(serverCount)}")
-        print(f"[{date} P] {totalPlayerCount}")
-        if fileName:
-            with open(fileName, "a+") as file:
-                file.write(
-                    f"{date} | {serverCount} | {addr[0]} | {addr[1]} | {infos[1]} | {infos[3]} | {infos[4]}\n")
-        if len(infos) == 10 or len(infos) == 6:
-            nkCount += 1
-        elif re.search(b"edicated", data):
-            bdsCount += 1
-        elif re.search(b"nukkit", data):
-            nkCount += 1
-        elif re.search(b"eyser", data):
-            geyserCount += 1
-        sk_rec.close()
-    except OSError as info:
-        if verboseMode == "y":
-            print(f"[{time.strftime('%H:%M:%S')} R] {info}, skipped.")
-        error += 1
-    except Exception as info:
-        print(f"[{time.strftime('%H:%M:%S')} R] {info}, skipped.")
-        error += 1
-        pass
+                log(f"Map info is unavailable.", info = "R")
+            try:
+                log(f"Port(v4/v6): {infos[10]}/{infos[11]}", info = "R")
+            except:
+                log(f"Port info is unavailable.", info = "R")
+            log(f"Source: {addr[0]}:{addr[1]}", info = "R")
+            serverCount += 1
+            totalPlayerCount += int(infos[4])
+            log(f"{str(serverCount)}", info = "C")
+            log(f"{totalPlayerCount}", info = "P")
+            print("")
+            if fileName:
+                with open(fileName, "a+") as file:
+                    file.write(
+                        f"{date} | {serverCount} | {addr[0]} | {addr[1]} | {infos[1]} | {infos[3]} | {infos[4]}\n")
+            if len(infos) == 10 or len(infos) == 6:
+                nkCount += 1
+            elif re.search(b"edicated", data):
+                bdsCount += 1
+            elif re.search(b"nukkit", data):
+                nkCount += 1
+            elif re.search(b"eyser", data):
+                geyserCount += 1
+            #socketSendRecv.close()
+        except OSError as errorInfo:
+            if verboseMode == "y":
+                log(f"{errorInfo}, skipped.", info = "R")
+            error += 1
+        except Exception as errorInfo:
+            log(f"{errorInfo}, skipped.", info = "R")
+            error += 1
+            pass
