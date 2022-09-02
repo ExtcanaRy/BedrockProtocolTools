@@ -74,19 +74,14 @@ def getIpList(ip: str):
 
 
 def sendPacket(portStart, portEnd, dstAddr):
-    dstPort = portStart
-    while True:
+    for dstPort in range(portStart, portEnd + 1):
         if stopThread:
             break
         if dstPort % int(portEnd / 5) == 0 and verboseMode == "y":
             log(f"Scaning port: {str(dstPort)} ~ {str(dstPort + int(portEnd / 5))}", info = "I")
         socketSendRecv.sendto(motdData, (dstAddr, dstPort))
-        if dstPort == portStart + portEnd - 1:
-            if verboseMode == "y":
-                log(f"Port {portStart} ~ {portStart + portEnd} Done", info = "I")
-            break
-        dstPort += 1
-
+    # if verboseMode == "y":
+    #     log(f"Port {portStart} ~ {portEnd} Done", info = "I")
 
 def startThreads():
     global stopThread
@@ -111,8 +106,9 @@ def startThreads():
             time.sleep(timeout)
             if tmpServerCount == serverCount:
                 stopThread = True
-        while threading.enumerate().__len__() != 2:  # main and itself
-            time.sleep(1)
+        t1.join()
+        # while threading.enumerate().__len__() != 2:  # main and itself
+        #     time.sleep(1)
 
     log("BE Server Count: " + str(serverCount), info = "I")
     log("BDS Count: " + str(bdsCount), info = "I")
@@ -186,7 +182,7 @@ if __name__ == "__main__":
             if fileName:
                 with open(fileName, "a+") as file:
                     file.write(
-                        f"{date} | {serverCount} | {addr[0]} | {addr[1]} | {infos[1]} | {infos[3]} | {infos[4]}\n")
+                        f"{date} | {serverCount} | {addr[0]} | {addr[1]} | {infos[1]} | {infos[3]} | {infos[4]} | {infos[5]}\n")
             if len(infos) == 10 or len(infos) == 6:
                 nkCount += 1
             elif re.search(b"edicated", data):
