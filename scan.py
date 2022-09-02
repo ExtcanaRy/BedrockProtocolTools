@@ -98,8 +98,7 @@ def startThreads():
         log(f"Scaning target: {dstAddr}", info = "I")
         print()
         # sendPacket(portStart, portEnd, dstAddr)
-        t1 = threading.Thread(target=sendPacket, args=(portStart, portEnd, dstAddr))
-        t1.setDaemon(True)
+        t1 = threading.Thread(target=sendPacket, args=(portStart, portEnd, dstAddr), daemon = True)
         t1.start()
         tmpServerCount = serverCount
         if timeout != 0:
@@ -120,8 +119,7 @@ def startThreads():
     os._exit(0)
 
 if __name__ == "__main__":
-    t = threading.Thread(target=startThreads)
-    t.setDaemon(True)
+    t = threading.Thread(target=startThreads, daemon = True)
     t.start()
 
     bdsCount = 0
