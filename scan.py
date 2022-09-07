@@ -1,3 +1,4 @@
+from multiprocessing.connection import _ConnectionBase
 import socket
 import sys
 import threading
@@ -5,14 +6,18 @@ import time
 import os
 import re
 from random import randint
+import multiprocessing as mp
+from webbrowser import get
 
-from api import getLocalHostIP, log
+from api import getLocalHostIP, getTime, log
 
 localHostIP = getLocalHostIP()
 localHostPort = randint(1024, 65535)
 
 socketSendRecv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 socketSendRecv.bind((localHostIP, localHostPort))
+
+scanResult = {"serverCount": 0, "bdsCount": 0, "nkCount": 0, "geyserCount": 0, "skipped": 0, "error": 0, "serverList": [], "totalPlayerCount": 0}
 
 try:
     TargetAddr = sys.argv[1]
@@ -34,7 +39,6 @@ except:
     fileName = ""
 
 motdData = b'\x01\x00\x00\x00\x00$\r\x12\xd3\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x124Vx\n'
-serverCount = 0
 
 
 def getIpList(ip: str):
@@ -78,10 +82,11 @@ def sendPacket(portStart, portEnd, dstAddr):
         if stopThread:
             break
         if dstPort % int(portEnd / 5) == 0 and verboseMode == "y":
-            log(f"Scaning port: {str(dstPort)} ~ {str(dstPort + int(portEnd / 5))}", info = "I")
+            log(f"Scaning port: {str(dstPort)} ~ {str(dstPort + int(portEnd / 5))}", info="I")
         socketSendRecv.sendto(motdData, (dstAddr, dstPort))
     # if verboseMode == "y":
     #     log(f"Port {portStart} ~ {portEnd} Done", info = "I")
+
 
 def startThreads():
     global stopThread
@@ -95,57 +100,52 @@ def startThreads():
     for dstAddr in ipList:
         stopThread = False
         print()
-        log(f"Scaning target: {dstAddr}", info = "I")
+        log(f"Scaning target: {dstAddr}", info="I")
         print()
         # sendPacket(portStart, portEnd, dstAddr)
-        t1 = threading.Thread(target=sendPacket, args=(portStart, portEnd, dstAddr), daemon = True)
+        t1 = threading.Thread(target=sendPacket, args=(
+            portStart, portEnd, dstAddr), daemon=True)
         t1.start()
-        tmpServerCount = serverCount
+        tmpServerCount = scanResult['serverCount']
         if timeout != 0:
             time.sleep(timeout)
-            if tmpServerCount == serverCount:
+            if tmpServerCount == scanResult['serverCount']:
                 stopThread = True
         t1.join()
         # while threading.enumerate().__len__() != 2:  # main and itself
         #     time.sleep(1)
 
-    log("BE Server Count: " + str(serverCount), info = "I")
-    log("BDS Count: " + str(bdsCount), info = "I")
-    log("NK Count: " + str(nkCount), info = "I")
-    log("Geyser Count: " + str(geyserCount), info = "I")
-    log("Skipped Count: " + str(skipped), info = "I")
-    log("Error Count: " + str(error), info = "I")
-    log("Total Player Count: " + str(totalPlayerCount), info = "I")
+    log(f"BE Server Count: {scanResult['serverCount']}", info="I")
+    log(f"BDS Count: {scanResult['bdsCount']}", info="I")
+    log(f"NK Count: {scanResult['nkCount']}", info="I")
+    log(f"Geyser Count: {scanResult['geyserCount']}", info="I")
+    log(f"Skipped Count: {scanResult['skipped']}", info="I")
+    log(f"Error Count: {scanResult['error']}", info="I")
+    log(f"Total Player Count: {scanResult['totalPlayerCount']}", info="I")
     os._exit(0)
 
-if __name__ == "__main__":
-    t = threading.Thread(target=startThreads, daemon = True)
-    t.start()
 
-    bdsCount = 0
-    nkCount = 0
-    geyserCount = 0
-    skipped = 0
-    error = 0
-    payloads = []
-    totalPlayerCount = 0
+def recvPackets(socketSendRecv: socket.socket, verboseMode: str, fileName: str, scanResult: dict, pipe: _ConnectionBase):
     while True:
         try:
             data, addr = socketSendRecv.recvfrom(10240)
-            date = time.strftime('%H:%M:%S')
+            date = getTime()
             if len(data) <= 30:
                 skipped += 1
-                log(f"data length <= 30, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}", info = "R")
+                log(
+                    f"data length <= 30, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}", info="R")
                 continue
             if b"MCPE" not in data:
                 skipped += 1
-                log(f"metadata \"MCPE\" not in packet, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}", info = "R")
+                log(
+                    f"metadata \"MCPE\" not in packet, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}", info="R")
                 continue
-            if addr not in payloads:
-                payloads.append(addr)
+            if addr not in scanResult['serverList']:
+                scanResult['serverList'].append(addr)
             else:
                 skipped += 1
-                log(f"Duplicate server found, skipped. Source: {addr[0]}:{addr[1]}", info = "R")
+                log(
+                    f"Duplicate server found, skipped. Source: {addr[0]}:{addr[1]}", info="R")
                 continue
             infos = []
             data1 = data.split(b"MCPE")
@@ -160,41 +160,52 @@ if __name__ == "__main__":
                     context = str(info)[2:-1]
                 infos.append(context)
             # log(len(infos))
-            log(f"Motd: {infos[1]}", info = "R")
-            log(f"Versin: {infos[3]}/{infos[2]}", info = "R")
-            log(f"Online: {infos[4]}/{infos[5]}", info = "R")
+            log(f"Motd: {infos[1]}", info="R")
+            log(f"Versin: {infos[3]}/{infos[2]}", info="R")
+            log(f"Online: {infos[4]}/{infos[5]}", info="R")
             try:
-                log(f"Map: {infos[7]}/{infos[8]}", info = "R")
+                log(f"Map: {infos[7]}/{infos[8]}", info="R")
             except:
-                log(f"Map info is unavailable.", info = "R")
+                log(f"Map info is unavailable.", info="R")
             try:
-                log(f"Port(v4/v6): {infos[10]}/{infos[11]}", info = "R")
+                log(f"Port(v4/v6): {infos[10]}/{infos[11]}", info="R")
             except:
-                log(f"Port info is unavailable.", info = "R")
-            log(f"Source: {addr[0]}:{addr[1]}", info = "R")
-            serverCount += 1
-            totalPlayerCount += int(infos[4])
-            log(f"{str(serverCount)}", info = "C")
-            log(f"{totalPlayerCount}", info = "P")
+                log(f"Port info is unavailable.", info="R")
+            log(f"Source: {addr[0]}:{addr[1]}", info="R")
+            scanResult['serverCount'] += 1
+            scanResult['totalPlayerCount'] += int(infos[4])
+            log(f"{scanResult['serverCount']}", info="C")
+            log(f"{scanResult['totalPlayerCount']}", info="P")
             print("")
             if fileName:
                 with open(fileName, "a+") as file:
                     file.write(
-                        f"{date} | {serverCount} | {addr[0]} | {addr[1]} | {infos[1]} | {infos[3]} | {infos[4]} | {infos[5]}\n")
+                        f"{date} | {scanResult['serverCount']} | {addr[0]} | {addr[1]} | {infos[1]} | {infos[3]} | {infos[4]} | {infos[5]}\n")
             if len(infos) == 10 or len(infos) == 6:
                 nkCount += 1
             elif re.search(b"edicated", data):
-                bdsCount += 1
+                scanResult['bdsCount'] += 1
             elif re.search(b"nukkit", data):
-                nkCount += 1
+                scanResult['nkCount'] += 1
             elif re.search(b"eyser", data):
-                geyserCount += 1
-            #socketSendRecv.close()
+                scanResult['geyserCount'] += 1
+            # socketSendRecv.close()
+            pipe.send(scanResult)
         except OSError as errorInfo:
             if verboseMode == "y":
-                log(f"{errorInfo}, skipped.", info = "R")
-            error += 1
+                log(f"{errorInfo}, skipped.", info="R")
+            scanResult['error'] += 1
         except Exception as errorInfo:
-            log(f"{errorInfo}, skipped.", info = "R")
-            error += 1
+            log(f"{errorInfo}, skipped.", info="R")
+            scanResult['error'] += 1
             pass
+
+
+if __name__ == "__main__":
+    t = threading.Thread(target=startThreads, daemon=True)
+    t.start()
+    pipe1, pipe2 = mp.Pipe()
+    p = mp.Process(target=recvPackets, args=(socketSendRecv, verboseMode, fileName, scanResult, pipe2), daemon=True)
+    p.start()
+    while mp.active_children():
+        scanResult = pipe2.recv()
