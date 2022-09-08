@@ -27,8 +27,12 @@ def getIpList(ip: str):
     if os.path.exists(TargetAddr):
         with open(TargetAddr, "r") as file:
             for ip in file.readlines():
-                # ipList.append(ip.split(" | ")[2])
-                ipList.append(ip[:-1])
+                if "|" in ip:
+                    if ip.split(" | ")[2] not in ipList:
+                        ipList.append(ip.split(" | ")[2])
+                else:
+                    if ip[:-1] not in ipList:
+                        ipList.append(ip[:-1])
             return ipList
     try:
         int(ip[-1])
@@ -97,7 +101,8 @@ def startThreads():
         #     time.sleep(1)
     # while mp.active_children():
     #     time.sleep(1)
-    # mp.active_children()[0].terminate()
+    mp.active_children()[0].terminate()
+    time.sleep(1)
     log(f"BE Server Count: {scanResult['serverCount']}", info="I")
     log(f"BDS Count: {scanResult['bdsCount']}", info="I")
     log(f"NK Count: {scanResult['nkCount']}", info="I")
@@ -114,19 +119,19 @@ def recvPackets(socketSendRecv: socket.socket, verboseMode: str, fileName: str, 
             data, addr = socketSendRecv.recvfrom(10240)
             date = getTime()
             if len(data) <= 30:
-                skipped += 1
+                scanResult['skipped'] += 1
                 log(
                     f"data length <= 30, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}", info="R")
                 continue
             if b"MCPE" not in data:
-                skipped += 1
+                scanResult['skipped'] += 1
                 log(
                     f"metadata \"MCPE\" not in packet, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}", info="R")
                 continue
             if addr not in scanResult['serverList']:
                 scanResult['serverList'].append(addr)
             else:
-                skipped += 1
+                scanResult['skipped'] += 1
                 log(
                     f"Duplicate server found, skipped. Source: {addr[0]}:{addr[1]}", info="R")
                 continue
