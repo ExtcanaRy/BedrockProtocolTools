@@ -1,13 +1,12 @@
-from multiprocessing.connection import _ConnectionBase
 import socket
 import sys
 import threading
 import time
 import os
 import re
-from random import randint
 import multiprocessing as mp
-from webbrowser import get
+from random import randint
+from multiprocessing.connection import _ConnectionBase
 
 from api import getLocalHostIP, getTime, log
 
@@ -17,26 +16,8 @@ localHostPort = randint(1024, 65535)
 socketSendRecv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 socketSendRecv.bind((localHostIP, localHostPort))
 
-scanResult = {"serverCount": 0, "bdsCount": 0, "nkCount": 0, "geyserCount": 0, "skipped": 0, "error": 0, "serverList": [], "totalPlayerCount": 0}
-
-try:
-    TargetAddr = sys.argv[1]
-    portRange = sys.argv[2]
-    verboseMode = sys.argv[3]
-except:
-    TargetAddr = input("Target IP: ")
-    portRange = input("Port range(like 1145-1919 and all): ")
-    verboseMode = input("Show verbose info(y/n): ")
-
-try:
-    timeout = int(sys.argv[4])
-except:
-    timeout = 0
-
-try:
-    fileName = str(sys.argv[5])
-except:
-    fileName = ""
+scanResult = {"serverCount": 0, "bdsCount": 0, "nkCount": 0, "geyserCount": 0,
+              "skipped": 0, "error": 0, "serverList": [], "totalPlayerCount": 0}
 
 motdData = b'\x01\x00\x00\x00\x00$\r\x12\xd3\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x124Vx\n'
 
@@ -114,7 +95,9 @@ def startThreads():
         t1.join()
         # while threading.enumerate().__len__() != 2:  # main and itself
         #     time.sleep(1)
-
+    # while mp.active_children():
+    #     time.sleep(1)
+    # mp.active_children()[0].terminate()
     log(f"BE Server Count: {scanResult['serverCount']}", info="I")
     log(f"BDS Count: {scanResult['bdsCount']}", info="I")
     log(f"NK Count: {scanResult['nkCount']}", info="I")
@@ -190,7 +173,6 @@ def recvPackets(socketSendRecv: socket.socket, verboseMode: str, fileName: str, 
             elif re.search(b"eyser", data):
                 scanResult['geyserCount'] += 1
             # socketSendRecv.close()
-            pipe.send(scanResult)
         except OSError as errorInfo:
             if verboseMode == "y":
                 log(f"{errorInfo}, skipped.", info="R")
@@ -198,14 +180,35 @@ def recvPackets(socketSendRecv: socket.socket, verboseMode: str, fileName: str, 
         except Exception as errorInfo:
             log(f"{errorInfo}, skipped.", info="R")
             scanResult['error'] += 1
-            pass
+        finally:
+            pipe.send(scanResult)
 
 
 if __name__ == "__main__":
+    try:
+        TargetAddr = sys.argv[1]
+        portRange = sys.argv[2]
+        verboseMode = sys.argv[3]
+    except:
+        TargetAddr = input("Target IP: ")
+        portRange = input("Port range(like 1145-1919 and all): ")
+        verboseMode = input("Show verbose info(y/n): ")
+
+    try:
+        timeout = int(sys.argv[4])
+    except:
+        timeout = 0
+
+    try:
+        fileName = str(sys.argv[5])
+    except:
+        fileName = ""
+
+    pipe1, pipe2 = mp.Pipe()
+    p = mp.Process(target=recvPackets, args=(
+        socketSendRecv, verboseMode, fileName, scanResult, pipe2), daemon=True)
+    p.start()
     t = threading.Thread(target=startThreads, daemon=True)
     t.start()
-    pipe1, pipe2 = mp.Pipe()
-    p = mp.Process(target=recvPackets, args=(socketSendRecv, verboseMode, fileName, scanResult, pipe2), daemon=True)
-    p.start()
     while mp.active_children():
-        scanResult = pipe2.recv()
+        scanResult = pipe1.recv()
