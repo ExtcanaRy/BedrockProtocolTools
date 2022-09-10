@@ -14,7 +14,9 @@ def getLocalHostIP():
 def getTime():
     return time.strftime('%H:%M:%S')
 
-def log(*content, level: str = "INFO", info: str = ""):
+def log(*content, level: str = "INFO", info: str = "", quiet: bool = False):
+    if quiet:
+        return
     date = time.strftime('%H:%M:%S')
     strs = ""
     for string in content:
