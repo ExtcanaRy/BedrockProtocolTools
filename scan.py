@@ -113,6 +113,7 @@ def startThreads():
     with open(fileName, "w") as file:
         file.writelines(scanResultList)
     quietMode = False
+    print()
     log(f"BE Server Count: {scanResult['serverCount']}", info="I", quiet=quietMode)
     log(f"BDS Count: {scanResult['bdsCount']}", info="I", quiet=quietMode)
     log(f"NK Count: {scanResult['nkCount']}", info="I", quiet=quietMode)
@@ -200,7 +201,12 @@ def recvPackets(socketSendRecv: socket.socket, verboseMode: str, fileName: list,
             log(f"{errorInfo}, skipped.", info="R", quiet=quietMode)
             scanResult['error'] += 1
         finally:
-            pipe.send((scanResult, scanResultList))
+            try:
+                pipe.send((scanResult, scanResultList))
+            except OSError:
+                pass
+            except Exception as errorInfo:
+                log(f"Pipe error: {errorInfo}.", info="R", quiet=quietMode)
 
 def saveResults(fileName, scanResult, addr, date, infos, scanResultList):
     formatedScanResult = f"{date} | {scanResult['serverCount']} | {addr[0]} | {addr[1]} | {infos[1]} | {infos[3]} | {infos[4]} | {infos[5]}"

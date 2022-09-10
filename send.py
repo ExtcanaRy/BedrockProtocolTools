@@ -1,6 +1,7 @@
 import marshal
 import random
 import socket
+import subprocess
 import sys
 import time
 import os
@@ -99,6 +100,8 @@ def sendPacket(target: str, port, payloadFile: str, loops, interval):
     targetAddr = target
     autoScan = port
     targetFile, targetInfo = target.split(":")
+    targetFileToScan = targetFile
+    scanProcess = False
     for i in range(loops):
         if ":" in target:
             with open(targetFile, "r") as file: #, encoding="utf-8"
@@ -127,11 +130,19 @@ def sendPacket(target: str, port, payloadFile: str, loops, interval):
         try:
             if isDisplayMotd:
                 sendMotdPacket(targetAddr, port)
+                if scanProcess:
+                    scanProcess.kill()
+                    scanProcess = False
         except:
             if isDisplayMotd:
-                log(f"Target server offline.")
                 if ":" in target and int(autoScan) == 8:
-                    os.system(f"python scan.py {targetFile} 10000-21000 nn 0 {targetFile}")
+                    if not scanProcess:
+                        log(f"Target server offline.")
+                        log(f"Starting refresh ip list...")
+                        scanProcess = subprocess.Popen(["python", "scan.py", targetFileToScan, "10000-21000", "nn", "0", targetFileToScan])
+                        targetFile = "updated.txt"
+                else:
+                    log(f"Target server offline.")
                 #log(f"Sending packet...")
         try:
             if port == "*":
