@@ -129,7 +129,10 @@ def sendPacket(target: str, port, payloadFile: str, loops, interval):
         except:
             if isDisplayMotd:
                 log(f"Target server offline.")
-        #log(f"Sending packet...")
+                if ":" in target and int(port) == 8:
+                    targetFile, targetInfo = target.split(":")
+                    os.system(f"py scan.py {targetFile} 10000-21000 nn 0 {targetFile}")
+                #log(f"Sending packet...")
         try:
             if port == "*":
                 for port in range(65535):
