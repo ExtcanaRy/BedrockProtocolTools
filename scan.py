@@ -226,23 +226,23 @@ def saveResults(fileName, scanResult, addr, date, infos, scanResultList):
                     infos[1][3]
                 except:
                     return scanResultList
-                if addr[0] not in scanResultList[index]:
-                    if fileName[0] == fileName[1]:
-                        with open("updated.txt", "a") as file:
-                            pervInfo = scanResultList[index].split(" | ")
-                            file.write(f"{formatedScanResult}  Pervious: {pervInfo[2]}:{pervInfo[3]}\n")
-                    scanResultList[index] = formatedScanResult + "\n"
-                    # if len(scanResultList) < len(scanResultListBackup):
-                    #     scanResultList = scanResultListBackup
-                    #     log(f"{len(scanResult)} < {len(scanResultListBackup)}!")
-                    #     with open("less.txt", "w") as file:
-                    #         file.writelines(scanResultList)
-                    #     with open("more.txt", "w") as file:
-                    #         file.writelines(scanResultListBackup)
-                    #     os._exit(0)
-                    # if randint(1, 5) == 0:
-                    #     with open(fileName, "w") as file:
-                    #         file.writelines(scanResultList)
+                # if addr[0] not in scanResultList[index]:
+                if fileName[0] == fileName[1]:
+                    with open("updated.txt", "a") as file:
+                        pervInfo = scanResultList[index].split(" | ")
+                        file.write(f"{formatedScanResult}  Pervious: {pervInfo[2]}:{pervInfo[3]}\n")
+                scanResultList[index] = formatedScanResult + "\n"
+                # if len(scanResultList) < len(scanResultListBackup):
+                #     scanResultList = scanResultListBackup
+                #     log(f"{len(scanResult)} < {len(scanResultListBackup)}!")
+                #     with open("less.txt", "w") as file:
+                #         file.writelines(scanResultList)
+                #     with open("more.txt", "w") as file:
+                #         file.writelines(scanResultListBackup)
+                #     os._exit(0)
+                # if randint(1, 5) == 0:
+                #     with open(fileName, "w") as file:
+                #         file.writelines(scanResultList)
                 return scanResultList
         scanResultList.append("\n" + formatedScanResult)
         if len(scanResultList) == 0:
