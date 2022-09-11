@@ -110,8 +110,9 @@ def startThreads():
     mp.active_children()[0].terminate()
     # time.sleep(1)
     # print(scanResultList)
-    with open(fileName, "w") as file:
-        file.writelines(scanResultList)
+    if os.path.exists(fileName):
+        with open(fileName, "w") as file:
+            file.writelines(scanResultList)
     quietMode = False
     print()
     log(f"BE Server Count: {scanResult['serverCount']}", info="I", quiet=quietMode)
@@ -129,8 +130,11 @@ def recvPackets(socketSendRecv: socket.socket, verboseMode: str, fileName: list,
         quietMode = True
     else:
         quietMode = False
-    with open(fileName[1], "r") as file:
-        scanResultList = file.readlines()
+    if os.path.exists(fileName[1]):
+        with open(fileName[1], "r") as file:
+            scanResultList = file.readlines()
+    else:
+        scanResultList = []
     while True:
         try:
             data, addr = socketSendRecv.recvfrom(10240)
@@ -226,8 +230,7 @@ def saveResults(fileName, scanResult, addr, date, infos, scanResultList):
                     infos[1][3]
                 except:
                     return scanResultList
-                # if addr[0] not in scanResultList[index]:
-                if fileName[0] == fileName[1]:
+                if fileName[0] == fileName[1] and addr[0] not in scanResultList[index]:
                     with open("updated.txt", "a") as file:
                         pervInfo = scanResultList[index].split(" | ")
                         file.write(f"{formatedScanResult}  Pervious: {pervInfo[2]}:{pervInfo[3]}\n")
@@ -280,4 +283,7 @@ if __name__ == "__main__":
     t = threading.Thread(target=startThreads, daemon=True)
     t.start()
     while mp.active_children():
-        scanResult, scanResultList = pipe1.recv()
+        try:
+            scanResult, scanResultList = pipe1.recv()
+        except:
+            pass

