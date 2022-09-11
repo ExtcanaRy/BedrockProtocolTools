@@ -18,11 +18,8 @@ def sendPacket(ip, port):
 def recvPacket(sk_send):
     data, addr = sk_send.recvfrom(10240)
     infos = []
-    data1 = data.split(b"MCPE")
-    infos_byte = data1[1].split(b";")
-    # log(data)
-    # log(data1)
-    # log(infos_byte)
+    prefix, motd_info = data.split(b"MCPE")
+    infos_byte = motd_info.split(b";")
     for info in infos_byte:
         try:
             context = info.decode()
@@ -41,6 +38,8 @@ def recvPacket(sk_send):
     except:
         log(f"Port info is unavailable.")
     log(f"Source: {addr[0]}:{addr[1]}")
+    #infos = {"motd": infos[1], "version_id": infos[2], "version": infos[3], "online": infos[4], "max_player": infos[5],
+    #         "unique_id": infos[6], "map": infos[7], "gamemode": infos[8], "source_port_v4": infos[10], "source_port_v6": infos[11]}
 
     sk_send.close()
 

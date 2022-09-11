@@ -15,17 +15,18 @@ localHostIP = getLocalHostIP()
 localHostPort = randint(1024, 65535)
 
 socketSendRecv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-socketSendRecv.bind((localHostIP, localHostPort))
+if sys.platform.startswith('win32'):
+    socketSendRecv.bind((localHostIP, localHostPort))
 
 scanResult = {"serverCount": 0, "bdsCount": 0, "nkCount": 0, "geyserCount": 0,
-              "skipped": 0, "error": 0, "serverList": [], "totalPlayerCount": 0}
+              "skipped": 0, "error": 0, "serverList": [], "totalPlayerCount": 0, "updated": 0, "ipUpdated": 0}
 
 motdData = b'\x01\x00\x00\x00\x00$\r\x12\xd3\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x124Vx\n'
 
 def getIpList(ip: str):
     ipList = []
     if os.path.exists(TargetAddr):
-        with open(TargetAddr, "r") as file:
+        with open(TargetAddr, "r", encoding="utf-8") as file:
             for ip in file.readlines():
                 if len(ip) < 3:
                     continue
@@ -111,7 +112,7 @@ def startThreads():
     # time.sleep(1)
     # print(scanResultList)
     if os.path.exists(fileName):
-        with open(fileName, "w") as file:
+        with open(fileName, "w", encoding="utf-8") as file:
             file.writelines(scanResultList)
     quietMode = False
     print()
@@ -122,6 +123,8 @@ def startThreads():
     log(f"Skipped Count: {scanResult['skipped']}", info="I", quiet=quietMode)
     log(f"Error Count: {scanResult['error']}", info="I", quiet=quietMode)
     log(f"Total Player Count: {scanResult['totalPlayerCount']}", info="I", quiet=quietMode)
+    log(f"Updated Count: {scanResult['updated']}", info="I", quiet=quietMode)
+    log(f"IP Updated Count: {scanResult['ipUpdated']}", info="I", quiet=quietMode)
     os._exit(0)
 
 
@@ -131,7 +134,7 @@ def recvPackets(socketSendRecv: socket.socket, verboseMode: str, fileName: list,
     else:
         quietMode = False
     if os.path.exists(fileName[1]):
-        with open(fileName[1], "r") as file:
+        with open(fileName[1], "r", encoding="utf-8") as file:
             scanResultList = file.readlines()
     else:
         scanResultList = []
@@ -187,7 +190,7 @@ def recvPackets(socketSendRecv: socket.socket, verboseMode: str, fileName: list,
             log(f"{scanResult['totalPlayerCount']}", info="P", quiet=quietMode)
             log(quiet=quietMode)
             if fileName[0]:
-                scanResultList = saveResults(fileName, scanResult, addr, date, infos, scanResultList)
+                scanResultList, scanResult = saveResults(fileName, scanResult, addr, date, infos, scanResultList)
             if len(infos) == 10 or len(infos) == 6:
                 scanResult['nkCount']  += 1
             elif re.search(b"edicated", data):
@@ -215,7 +218,7 @@ def recvPackets(socketSendRecv: socket.socket, verboseMode: str, fileName: list,
 def saveResults(fileName, scanResult, addr, date, infos, scanResultList):
     formatedScanResult = f"{date} | {scanResult['serverCount']} | {addr[0]} | {addr[1]} | {infos[1]} | {infos[3]} | {infos[4]} | {infos[5]}"
     # scanResultListBackup = scanResultList
-    with open(fileName[0], "r+") as file:
+    with open(fileName[0], "r+", encoding="utf-8") as file:
         # scanResultList = file.readlines()
         for index in range(len(scanResultList)):
             # print(scanResultList[index])
@@ -231,9 +234,11 @@ def saveResults(fileName, scanResult, addr, date, infos, scanResultList):
                 except:
                     return scanResultList
                 if fileName[0] == fileName[1] and addr[0] not in scanResultList[index]:
-                    with open("updated.txt", "a") as file:
+                    with open("updated.txt", "a", encoding="utf-8") as file:
                         pervInfo = scanResultList[index].split(" | ")
                         file.write(f"{formatedScanResult}  Pervious: {pervInfo[2]}:{pervInfo[3]}\n")
+                    scanResult['ipUpdated'] += 1
+                scanResult['updated'] += 1
                 scanResultList[index] = formatedScanResult + "\n"
                 # if len(scanResultList) < len(scanResultListBackup):
                 #     scanResultList = scanResultListBackup
@@ -250,7 +255,7 @@ def saveResults(fileName, scanResult, addr, date, infos, scanResultList):
         scanResultList.append("\n" + formatedScanResult)
         if len(scanResultList) == 0:
             scanResultList.append(formatedScanResult + "\n")
-        return scanResultList
+        return scanResultList, scanResult
 
 
 if __name__ == "__main__":
@@ -277,6 +282,7 @@ if __name__ == "__main__":
         fileName = ""
 
     pipe1, pipe2 = mp.Pipe()
+    mp.set_start_method('spawn')
     p = mp.Process(target=recvPackets, args=(
         socketSendRecv, verboseMode, [fileName, TargetAddr], scanResult, pipe2), daemon=True)
     p.start()

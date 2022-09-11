@@ -104,7 +104,7 @@ def sendPacket(target: str, port, payloadFile: str, loops, interval):
     scanProcess = False
     for i in range(loops):
         if ":" in target:
-            with open(targetFile, "r") as file: #, encoding="utf-8"
+            with open(targetFile, "r", encoding="utf-8") as file: #, encoding="utf-8"
                 fileContent = file.readlines()
                 contentCount = len(fileContent)
                 for index in range(contentCount):
