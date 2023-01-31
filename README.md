@@ -1,8 +1,8 @@
 # ***本工具包所有内容基于GPL3.0开源，请勿将本项目用于非法用途。由使用本工具包造成的任何问题，作者概不负责！***
 
-## 直接在 [Releases](https://github.com/WillowSauceR/tools/releases/latest) 页面下载最新的版本，然后解压打开其中的exe文件进行使用
+## 直接在 [Releases](https://github.com/WillowSauceR/BedrockProtocolTools/releases/latest) 页面下载最新的版本，然后解压打开其中的exe文件进行使用
 
-## 或者使用 `git clone https://github.com/WillowSauceR/tools`将本项目克隆到本地或直接下载本项目，然后使用python3来运行
+## 或者使用 `git clone https://github.com/WillowSauceR/BedrockProtocolTools`将本项目克隆到本地或直接下载本项目，然后使用python3来运行
 
 ## scan.py
 

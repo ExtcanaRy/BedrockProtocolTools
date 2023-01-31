@@ -52,8 +52,8 @@ jobs:
       uses: TheDoctor0/zip-release@0.6.2
       with:
         filename: MCBEprotocolTools.zip
-        path: D:\a\tools\tools\dist\
-        directory: D:\a\tools\tools\dist\
+        path: ./
+        directory: ./dist/
         
     - name: GH Release
       uses: softprops/action-gh-release@v0.1.14
