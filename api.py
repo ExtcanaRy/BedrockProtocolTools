@@ -35,12 +35,16 @@ def log(*content, level: str = "INFO", info: str = "", quiet: bool = False):
         print(f"[{date}] {content}")
 
 
-def get_ip_list(ip: str):
+def get_ip_list(addr: str):
     # ip = "42.186.0-255.0-255" -> len(ip_list) == 65536
+    try:
+        int(addr[-1])
+    except:
+        return [socket.gethostbyname(addr)]
     ip_list = []
     processed_ip_segs = [[], [], [], []]
     ip_seg_index = 0
-    ip_segs = ip.split(".")  # 42.186.0-255.0-255 -> [42, 186, 0-255, 0-255]
+    ip_segs = addr.split(".")  # 42.186.0-255.0-255 -> [42, 186, 0-255, 0-255]
     for ip_seg in ip_segs:
         if "-" in ip_seg:
             seg_list = ip_seg.split("-")  # 0-255 -> [0, 255]
