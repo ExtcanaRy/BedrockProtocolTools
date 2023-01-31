@@ -115,6 +115,7 @@ def recv_packets(udp_skt, pbar):
 
 
 if __name__ == "__main__":
+    mp.freeze_support()
     parser = argparse.ArgumentParser()
     parser.add_argument("addr", help="the target server address")
     parser.add_argument("-i", "--interval", default=0.005, type=float,
@@ -122,7 +123,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--port", default=random.randint(1024, 65535), type=int,
                         help="local port for send packet")
 
-    args = parser.parse_args()
+    args, unparsed = parser.parse_known_args()
 
     addr = args.addr
     interval = args.interval
