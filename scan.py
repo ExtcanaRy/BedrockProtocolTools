@@ -34,30 +34,49 @@ def send_packet(udp_skt: socket.socket, ip: str, port_range: list, interval: flo
             conn.send(1)
 
 
-def scanner(ip: str, local_port: int, interval: float):
-    udp_skt = get_udp_socket(local_port)
+prog_mon = 0
+def progerss_monitor(conn):
+    global prog_mon
+    prog_mon = 0
+    while True:
+        prog_mon_tmp = prog_mon
+        time.sleep(1)
+        if prog_mon == prog_mon_tmp:
+            for i in range(65536-prog_mon):
+                try:
+                    conn.send(1)
+                except BrokenPipeError:
+                    pass
+            break
 
-    pbar = tqdm(iterable=range(65530), desc="Scaning progress",
+
+is_recving = False
+def scanner(udp_skt: socket.socket, addr: str, interval: float):
+    global is_recving, prog_mon
+    pbar = tqdm(iterable=range(65536), desc="Scaning progress",
                 leave=False, unit="Port", unit_scale=False)
-
-    threading.Thread(target=recv_packets, args=(
-        udp_skt, pbar), daemon=True).start()
-
-    port_ranges = split_list(65535, mp.cpu_count() - 1)
+    
+    if not is_recving:
+        is_recving = True
+        threading.Thread(target=recv_packets, args=(
+            udp_skt, pbar), daemon=True).start()
+        
+    port_ranges = split_list(65536, mp.cpu_count() - 1)
 
     parent_conn, child_conn = mp.Pipe()
 
-    for port_range in port_ranges:
-        mp.Process(target=send_packet, args=(udp_skt, ip,
-                   port_range, interval, child_conn), daemon=True).start()
+    threading.Thread(target=progerss_monitor, args=(
+        child_conn,), daemon=True).start()
 
+    for port_range in port_ranges:
+        mp.Process(target=send_packet, args=(udp_skt, addr,
+                   port_range, interval, child_conn), daemon=True).start()
+        
     for p in pbar:
-        # break
         parent_conn.recv()
+        prog_mon += 1
 
     time.sleep(3)
-
-    udp_skt.close()
 
 
 def recv_packets(udp_skt, pbar):
@@ -109,5 +128,7 @@ if __name__ == "__main__":
     interval = args.interval
     local_port = args.port
 
+    udp_skt = get_udp_socket(local_port)
+
     for addr in get_ip_list(addr):
-        scanner(addr, local_port, interval)
+        scanner(udp_skt, addr, interval)
