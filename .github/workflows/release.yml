@@ -38,6 +38,7 @@ jobs:
     
     - name: Create script
       run: |
+        cmd
         chcp 65001
         cd .\dist\
         cd . >> .\OpenMe.bat
@@ -47,7 +48,6 @@ jobs:
         echo "echo " >> .\OpenMe.bat
         echo "cmd" >> .\OpenMe.bat
         echo "@echo on" >> .\OpenMe.bat
-      shell: cmd
 
     - name: Zip Release
       uses: TheDoctor0/zip-release@0.6.2
