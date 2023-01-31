@@ -14,6 +14,8 @@ scan_res = []
 
 
 def split_list(total: int, num_splits: int) -> list:
+    if num_splits <= 1:
+        return [[0, total]]
     split_size = total // num_splits
     split_list = [[i * split_size + 1, (i + 1) * split_size]
                   for i in range(num_splits - 1)]
