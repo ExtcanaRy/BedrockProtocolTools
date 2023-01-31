@@ -87,8 +87,8 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--port", type=int, default=19132, help="Port (Number)")
     parser.add_argument("-l", "--loops", type=int, default=1, help="Loops (Number)")
     parser.add_argument("-i", "--interval", type=float, default=10, help="Interval (sec)")
-    parser.add_argument("-d", "--display_motd", type=bool, action="store_true", default=False, help="Display Motd")
-    parser.add_argument("-pu", "--proxy_used", type=bool, action="store_true", default=False, help="Use Proxy")
+    parser.add_argument("-d", "--display_motd", action="store_true", default=False, help="Display Motd")
+    parser.add_argument("-pu", "--proxy_used", action="store_true", default=False, help="Use Proxy")
     parser.add_argument("-pc", "--proxy_country", type=str, default="us", help="ProxyCountry (like cn, ru, us or enter to use all)")
     args = parser.parse_args()
     
