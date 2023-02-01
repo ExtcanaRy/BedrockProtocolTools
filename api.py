@@ -6,18 +6,18 @@ import random
 MOTD_PKT = b'\x01\x00\x00\x00\x00$\r\x12\xd3\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x124Vx\n'
 
 
-def getLocalHostIP():
-    localHostIP = socket.gethostbyname(socket.gethostname())
+def get_local_host_ip():
+    local_host_ip = socket.gethostbyname(socket.gethostname())
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(('8.8.8.8', 80))
-        localHostIP = s.getsockname()[0]
+        local_host_ip = s.getsockname()[0]
     finally:
         s.close()
-    return localHostIP
+    return local_host_ip
 
 
-def getTime():
+def get_time():
     return time.strftime('%H:%M:%S')
 
 
@@ -112,7 +112,7 @@ def parse_raw_pkt(pkt):
     try:
         infos = {"motd": decode_unicode(infos[1]), "version_id": infos[2], "version": infos[3], "online": infos[4],
                  "max_player": infos[5], "unique_id": infos[6], "map": decode_unicode(infos[7]), "gamemode": infos[8],
-                 "source_port_v4": infos[10], "source_port_v6": infos[11], "addr": f"{addr[0]}:{addr[1]}"}
+                 "source_port_v4": infos[10], "source_port_v6": infos[11], "ip": addr[0], "addr": f"{addr[0]}:{addr[1]}"}
     except IndexError:
         return None, addr
     if infos["source_port_v4"] != str(addr[1]):

@@ -4,13 +4,12 @@ import threading
 import time
 import traceback
 import argparse
+import os
 import multiprocessing as mp
 
 from tqdm import tqdm
 
-from api import MOTD_PKT, getTime, parse_raw_pkt, get_ip_list, get_udp_socket
-
-scan_res = []
+from api import MOTD_PKT, get_time, parse_raw_pkt, get_ip_list, get_udp_socket
 
 
 def split_list(total: int, num_splits: int) -> list:
@@ -91,7 +90,7 @@ def recv_packets(udp_skt, pbar):
 
             server_count += 1
 
-            values = [f"[Time   ] {getTime()}",
+            values = [f"[Time   ] {get_time()}",
                       f"[Address] {infos['addr']}",
                       f"[MotdInf] {infos['motd']}",
                       f"[Version] {infos['version']}/{infos['version_id']}",
@@ -101,7 +100,8 @@ def recv_packets(udp_skt, pbar):
                       ""]
             if int(infos['online']) >= display_online:
                 pbar.write("\n".join(values))
-            scan_res.append(values)
+            if exec_cmd:
+                threading.Thread(target=exec_cmd_async, args=(exec_cmd, infos), daemon=True).start()
         except socket.timeout:
             continue
         except ConnectionResetError:
@@ -116,6 +116,12 @@ def recv_packets(udp_skt, pbar):
             continue
 
 
+def exec_cmd_async(cmd: str, variables: dict = [None]) -> None:
+    for key in variables:
+        cmd = cmd.replace("{"+key+"}", variables[key])
+    os.system(cmd)
+
+
 if __name__ == "__main__":
     mp.freeze_support()
     parser = argparse.ArgumentParser()
@@ -126,6 +132,10 @@ if __name__ == "__main__":
                         help="local port for send packet")
     parser.add_argument("-do", "--display-online", default=0, type=int,
                         help="only displayed when the number of online players is greater than or equal to this value")
+    parser.add_argument("-e", "--exec-cmd", default="", type=str,
+                        help="the cmd command that is executed immediately after scanning the server can use {var} as a variable, "
+                        + "the command needs to be enclosed in double quotes, the available variables are: motd, version_id, "
+                        + "version, online, max_player, unique_id, map, gamemode, source_port_v4, source_port_v6, addr and ip")
 
     args, unparsed = parser.parse_known_args()
 
@@ -133,6 +143,7 @@ if __name__ == "__main__":
     interval = args.interval
     local_port = args.port
     display_online = args.display_online
+    exec_cmd = args.exec_cmd
 
     udp_skt = get_udp_socket(local_port)
 
