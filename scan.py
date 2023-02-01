@@ -87,6 +87,8 @@ def recv_packets(udp_skt, pbar):
             infos, addr = parse_raw_pkt(udp_skt.recvfrom(1024))
             if not infos or not infos["motd"]:  # 过滤掉没有motd的和没有信息的
                 continue
+            if int(infos['online']) >= display_online:
+                continue
 
             server_count += 1
 
@@ -98,10 +100,9 @@ def recv_packets(udp_skt, pbar):
                       f"[Online ] {infos['online']}/{infos['max_player']}",
                       f"[Count  ] {server_count}",
                       ""]
-            if int(infos['online']) >= display_online:
-                pbar.write("\n".join(values))
-                if exec_cmd:
-                    threading.Thread(target=exec_cmd_async, args=(exec_cmd, infos), daemon=True).start()
+            pbar.write("\n".join(values))
+            if exec_cmd:
+                threading.Thread(target=exec_cmd_async, args=(exec_cmd, infos), daemon=True).start()
         except socket.timeout:
             continue
         except ConnectionResetError:
