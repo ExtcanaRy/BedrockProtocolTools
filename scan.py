@@ -100,8 +100,8 @@ def recv_packets(udp_skt, pbar):
                       ""]
             if int(infos['online']) >= display_online:
                 pbar.write("\n".join(values))
-            if exec_cmd:
-                threading.Thread(target=exec_cmd_async, args=(exec_cmd, infos), daemon=True).start()
+                if exec_cmd:
+                    threading.Thread(target=exec_cmd_async, args=(exec_cmd, infos), daemon=True).start()
         except socket.timeout:
             continue
         except ConnectionResetError:
