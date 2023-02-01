@@ -99,8 +99,8 @@ def recv_packets(udp_skt, pbar):
                       f"[Online ] {infos['online']}/{infos['max_player']}",
                       f"[Count  ] {server_count}",
                       ""]
-
-            pbar.write("\n".join(values))
+            if int(infos['online']) >= display_online:
+                pbar.write("\n".join(values))
             scan_res.append(values)
         except socket.timeout:
             continue
@@ -124,12 +124,15 @@ if __name__ == "__main__":
                         help="send packet interval. recommand 0.01~0.0001")
     parser.add_argument("-p", "--port", default=random.randint(1024, 65535), type=int,
                         help="local port for send packet")
+    parser.add_argument("-do", "--display-online", default=0, type=int,
+                        help="only displayed when the number of online players is greater than or equal to this value")
 
     args, unparsed = parser.parse_known_args()
 
     addr = args.addr
     interval = args.interval
     local_port = args.port
+    display_online = args.display_online
 
     udp_skt = get_udp_socket(local_port)
 

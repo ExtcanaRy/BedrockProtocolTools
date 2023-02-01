@@ -45,7 +45,7 @@ jobs:
         echo "@echo off" >> .\OpenMe.bat
         echo "echo Type a program name here to run." >> .\OpenMe.bat
         echo "echo Such as scan, motd and send." >> .\OpenMe.bat
-        echo "echo <=>" >> .\OpenMe.bat
+        echo "echo [+]" >> .\OpenMe.bat
         echo "cmd" >> .\OpenMe.bat
         echo "@echo on" >> .\OpenMe.bat
 
