@@ -1,4 +1,4 @@
 __pycache__
-.gitignore
 test.py
 *.txt
+.vscode

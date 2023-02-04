@@ -16,14 +16,8 @@ def recv_pkt(sk_send):
     log(f"Motd: {infos['motd']}")
     log(f"Versin: {infos['version']}/{infos['version_id']}")
     log(f"Online: {infos['online']}/{infos['max_player']}")
-    try:
-        log(f"Map: {infos['map']}/{infos['gamemode']}")
-    except:
-        log(f"Map info is unavailable.")
-    try:
-        log(f"Port(v4/v6): {infos['source_port_v4']}/{infos['source_port_v6']}")
-    except:
-        log(f"Port info is unavailable.")
+    log(f"Map: {infos['map']}/{infos['gamemode']}")
+    log(f"Port(v4/v6): {infos['source_port_v4']}/{infos['source_port_v6']}")
     log(f"Source: {infos['addr']}")
 
     sk_send.close()
