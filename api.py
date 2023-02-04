@@ -109,12 +109,19 @@ def parse_raw_pkt(pkt):
             context = str(info)[2:-1]
         infos.append(context)
     try:
-        infos = {"motd": decode_unicode(infos[1]), "version_id": infos[2], "version": infos[3], "online": infos[4],
-                 "max_player": infos[5], "unique_id": infos[6], "map": decode_unicode(infos[7]), "gamemode": infos[8],
-                 "source_port_v4": infos[10], "source_port_v6": infos[11], "ip": addr[0], "addr": f"{addr[0]}:{addr[1]}"}
-    except IndexError:
+        infos = {"motd": decode_unicode(infos[1]), "version_id": infos[2], "version": infos[3],
+                 "online": infos[4], "max_player": infos[5], "unique_id": infos[6],
+                 "ip": addr[0], "port": addr[1], "addr": f"{addr[0]}:{addr[1]}"}
+        # some servers will not return these info
+        try:
+            infos.update({"map": decode_unicode(infos[7]), "gamemode": infos[8]})
+        except (KeyError, IndexError):
+            infos.update({"map": "N", "gamemode": "A"})
+        try:
+            infos.update({"source_port_v4": infos[10], "source_port_v6": infos[11]})
+        except (KeyError, IndexError):
+            infos.update({"source_port_v4": "N", "source_port_v6": "A"})
+
+    except (KeyError, IndexError):
         return None, addr
-    if infos["source_port_v4"] != str(addr[1]):
-        # return None, addr
-        pass
     return infos, addr
