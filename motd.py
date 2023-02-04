@@ -47,3 +47,5 @@ if __name__ == "__main__":
         send_pkt(addr, port, timeout)
     except TimeoutError:
         log(f"Timeout! Server may be offline or blocked motd request.")
+    except ConnectionResetError:
+        log(f"Connection Reset! Server may be offline or blocked motd request.")
