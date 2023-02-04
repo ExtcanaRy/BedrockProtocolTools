@@ -3,7 +3,7 @@ from api import get_udp_socket, log, parse_raw_pkt, MOTD_PKT
 
 
 def send_pkt(addr, port, timeout: float=3.0):
-    udp_skt = get_udp_socket(port)
+    udp_skt = get_udp_socket()
     udp_skt.settimeout(timeout)
     udp_skt.sendto(
         MOTD_PKT,
@@ -45,5 +45,5 @@ if __name__ == "__main__":
 
     try:
         send_pkt(addr, port, timeout)
-    except:
+    except TimeoutError:
         log(f"Timeout! Server may be offline or blocked motd request.")
