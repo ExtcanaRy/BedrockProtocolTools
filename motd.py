@@ -2,7 +2,7 @@ import argparse
 from api import get_udp_socket, log, parse_raw_pkt, MOTD_PKT
 
 
-def send_pkt(addr, port, timeout):
+def send_pkt(addr, port, timeout: float=3.0):
     udp_skt = get_udp_socket(port)
     udp_skt.settimeout(timeout)
     udp_skt.sendto(
