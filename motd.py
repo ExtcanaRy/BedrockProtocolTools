@@ -1,10 +1,10 @@
 import argparse
+import socket
 from api import get_udp_socket, log, parse_raw_pkt, MOTD_PKT
 
 
-def send_pkt(addr, port, timeout: float=3.0):
-    udp_skt = get_udp_socket()
-    udp_skt.settimeout(timeout)
+def send_pkt(addr, port, timeout: float=3.0, local_port: int=None):
+    udp_skt = get_udp_socket(local_port, timeout)
     udp_skt.sendto(
         MOTD_PKT,
         (addr, port))
@@ -36,16 +36,19 @@ if __name__ == "__main__":
                         help="target server port")
     parser.add_argument("-t", "--timeout", default=3.0, type=float,
                         help="timeout")
+    parser.add_argument("-lp", "--local-port", default=None, type=int,
+                        help="local port to send motd packet")
 
     args = parser.parse_args()
 
     addr = args.addr
     port = args.port
     timeout = args.timeout
+    local_port = args.local_port
 
     try:
-        send_pkt(addr, port, timeout)
-    except TimeoutError:
+        send_pkt(addr, port, timeout, local_port)
+    except (TimeoutError, socket.timeout):
         log(f"Timeout! Server may be offline or blocked motd request.")
     except ConnectionResetError:
         log(f"Connection Reset! Server may be offline or blocked motd request.")

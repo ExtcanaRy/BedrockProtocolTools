@@ -85,13 +85,12 @@ def decode_unicode(string: str):
         return string.encode("utf-8").decode("unicode-escape")
 
 
-def get_udp_socket(port=random.randint(1024, 65535)):
+def get_udp_socket(port=random.randint(1024, 65535), timeout: int=1) -> socket.socket:
     if not port:
         port = random.randint(1024, 65535)
     sockets = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sockets.settimeout(1)
-    if sys.platform.startswith('win32'):
-        sockets.bind(("", port))
+    sockets.settimeout(timeout)
+    sockets.bind(("", port))
     return sockets
 
 
