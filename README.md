@@ -1,4 +1,4 @@
-# ***本工具包所有内容基于GPL3.0开源，请勿将本项目用于非法用途。由使用本工具包造成的任何问题，作者概不负责！***
+# ***本工具包所有内容基于AGPLv3开源，请勿将本项目用于非法用途。由使用本工具包造成的任何问题，作者概不负责！***
 
 ![Liscense](https://img.shields.io/github/license/WillowSauceR/BedrockProtocolTools?style=for-the-badge&logo=appveyor)
 ![Downloads](https://img.shields.io/github/downloads/WillowSauceR/BedrockProtocolTools/total?style=for-the-badge&logo=appveyor)
