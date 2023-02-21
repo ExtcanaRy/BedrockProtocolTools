@@ -6,7 +6,7 @@ import os
 import argparse
 
 from motd import send_pkt as send_motd_pkt
-from api import get_udp_socket, log
+from api import get_udp_socket, is_ipv6_addr, log
 
 
 def get_proxy() -> list:
@@ -42,7 +42,7 @@ def create_socket():
         if proxy_used:
             log(f"Used proxy: {proxy_addr}:{proxy_port}")
     else:
-        udp_skt = get_udp_socket(local_port)
+        udp_skt = get_udp_socket(local_port, 1, use_ipv6)
     return local_port, udp_skt
 
 
@@ -91,6 +91,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--display_motd", action="store_true", default=False, help="Display Motd")
     parser.add_argument("-pu", "--proxy_used", action="store_true", default=False, help="Use Proxy")
     parser.add_argument("-pc", "--proxy_country", type=str, default="us", help="ProxyCountry (like cn, ru, us or enter to use all)")
+    parser.add_argument("-v6", "--use-ipv6", action="store_true", default=False, help="use IPv6 instead of IPv4")
     args = parser.parse_args()
     
     target = args.target
@@ -102,6 +103,7 @@ if __name__ == "__main__":
     quiet_mode = args.quiet
     proxy_used = args.proxy_used
     proxyCountry = args.proxy_country
+    use_ipv6 = args.use_ipv6
     
     if proxy_used:
         try:
@@ -110,7 +112,10 @@ if __name__ == "__main__":
             import requests
         except Exception as error:
             print(error)
-            log("Import module error! Please run \"pip install -r requirements.txt\"")
+            log("Import module error! Run \"pip install -r requirements.txt\" to install dependent modules? [y/n] ")
+            if input() == "y":
+                os.system("pip install -r requirements.txt")
+                log("Success. Please restart this program!")
             os._exit(1)
         log("Proxy mode is under development!")
     

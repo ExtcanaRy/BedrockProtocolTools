@@ -1,10 +1,10 @@
 import argparse
 import socket
-from api import get_udp_socket, log, parse_raw_pkt, MOTD_PKT
+from api import get_udp_socket, is_ipv6_addr, log, parse_raw_pkt, MOTD_PKT
 
 
 def send_pkt(addr, port, timeout: float=3.0, local_port: int=None):
-    udp_skt = get_udp_socket(local_port, timeout)
+    udp_skt = get_udp_socket(local_port, timeout, is_ipv6_addr(addr))
     udp_skt.sendto(
         MOTD_PKT,
         (addr, port))

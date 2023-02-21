@@ -137,6 +137,8 @@ if __name__ == "__main__":
                         help="the cmd command that is executed immediately after scanning the server can use {var} as a variable, "
                         + "the command needs to be enclosed in double quotes, the available variables are: motd, version_id, "
                         + "version, online, max_player, unique_id, map, gamemode, source_port_v4, source_port_v6, addr and ip")
+    parser.add_argument("-v6", "--use-ipv6", action="store_true", default=False, 
+                        help="use IPv6 instead of IPv4")
 
     args, unparsed = parser.parse_known_args()
 
@@ -145,8 +147,9 @@ if __name__ == "__main__":
     local_port = args.port
     display_online = args.display_online
     exec_cmd = args.exec_cmd
+    use_ipv6 = args.use_ipv6
 
-    udp_skt = get_udp_socket(local_port)
+    udp_skt = get_udp_socket(local_port, use_ipv6=use_ipv6)
 
     for addr in get_ip_list(addr):
         scanner(udp_skt, addr, interval)

@@ -1,6 +1,5 @@
 import socket
 import time
-import sys
 import random
 
 MOTD_PKT = b'\x01\x00\x00\x00\x00$\r\x12\xd3\x00\xff\xff\x00\xfe\xfe\xfe\xfe\xfd\xfd\xfd\xfd\x124Vx\n'
@@ -25,17 +24,13 @@ def log(*content, level: str = "INFO", info: str = "", quiet: bool = False):
     if quiet:
         return
     date = time.strftime('%H:%M:%S')
-    strs = ""
-    for string in content:
-        strs += str(string)
-    content = strs[0:]
     if info != "":
-        print(f"[{date} {info}] {content}")
+        print(f"[{date} {info}] ", *content, sep="")
     else:
-        print(f"[{date}] {content}")
+        print(f"[{date}] ", *content, sep="")
 
 
-def get_ip_list(addr: str):
+def get_ip_list(addr: str) -> list:
     # ip = "42.186.0-255.0-255" -> len(ip_list) == 65536
     try:
         int(addr[-1])
@@ -65,7 +60,7 @@ def get_ip_list(addr: str):
     return ip_list
 
 
-def decode_unicode(string: str):
+def decode_unicode(string: str) -> str:
     is_special_unicode = False
     for index in range(0, len(string), 5):
         if string[index] != "u":
@@ -85,14 +80,28 @@ def decode_unicode(string: str):
         return string.encode("utf-8").decode("unicode-escape")
 
 
-def get_udp_socket(port=random.randint(1024, 65535), timeout: int=1) -> socket.socket:
-    if not port:
-        port = random.randint(1024, 65535)
-    sockets = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sockets.settimeout(timeout)
-    sockets.bind(("", port))
+def get_udp_socket(loc_port=random.randint(1024, 65535), timeout: int=1, use_ipv6: bool=False, loc_addr: str="") -> socket.socket:
+    if not loc_port:
+        loc_port = random.randint(1024, 65535)
+    if use_ipv6:
+        sockets = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+    else:
+        sockets = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    if timeout:
+        sockets.settimeout(timeout)
+    sockets.bind((loc_addr, loc_port))
     return sockets
 
+def is_ipv6_addr(addr: str) -> bool:
+    try:
+        addr = socket.gethostbyname(addr)
+    except socket.gaierror:
+        pass
+    try:
+        socket.inet_pton(socket.AF_INET6, addr)
+        return True
+    except socket.error:
+        return False
 
 def parse_raw_pkt(pkt):
     server_data, addr = pkt
