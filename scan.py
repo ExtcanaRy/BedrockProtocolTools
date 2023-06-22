@@ -52,7 +52,7 @@ def progerss_monitor(conn):
 
 
 is_recving = False
-def scanner(udp_skt: socket.socket, addr: str, interval: float):
+def scanner(udp_skt: socket.socket, addr: str, interval: float, threads: int):
     global is_recving, prog_mon
     pbar = tqdm(iterable=range(65536), desc="Scaning progress",
                 leave=False, unit="Port", unit_scale=False)
@@ -62,7 +62,7 @@ def scanner(udp_skt: socket.socket, addr: str, interval: float):
         threading.Thread(target=recv_packets, args=(
             udp_skt, pbar), daemon=True).start()
         
-    port_ranges = split_list(65536, mp.cpu_count() - 1)
+    port_ranges = split_list(65536, threads)
 
     parent_conn, child_conn = mp.Pipe()
 
@@ -131,6 +131,8 @@ if __name__ == "__main__":
                         help="send packet interval. recommand 0.01~0.0001")
     parser.add_argument("-p", "--port", default=random.randint(1024, 65535), type=int,
                         help="local port for send packet")
+    parser.add_argument("-t", "--threads", default=(mp.cpu_count() - 1), type=int,
+                        help="number of threads used to scan")
     parser.add_argument("-do", "--display-online", default=0, type=int,
                         help="only displayed when the number of online players is greater than or equal to this value")
     parser.add_argument("-e", "--exec-cmd", default="", type=str,
@@ -148,8 +150,9 @@ if __name__ == "__main__":
     display_online = args.display_online
     exec_cmd = args.exec_cmd
     use_ipv6 = args.use_ipv6
+    threads = args.threads
 
     udp_skt = get_udp_socket(local_port, use_ipv6=use_ipv6)
 
     for addr in get_ip_list(addr):
-        scanner(udp_skt, addr, interval)
+        scanner(udp_skt, addr, interval, threads)
