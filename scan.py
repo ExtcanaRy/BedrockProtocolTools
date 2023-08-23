@@ -22,8 +22,9 @@ def split_list(total: int, num_splits: int) -> list:
     return split_list
 
 
-def send_packet(udp_skt: socket.socket, ip: str, port_range: list, interval: float, conn):
+def send_packet(udp_skt: socket.socket, ip: str, port_range: list, port_start: int, interval: float, conn):
     for port in range(port_range[0], port_range[1]):
+        port += port_start
         try:
             udp_skt.sendto(MOTD_PKT, (ip, port))
             time.sleep(interval)
@@ -36,14 +37,14 @@ def send_packet(udp_skt: socket.socket, ip: str, port_range: list, interval: flo
 
 
 prog_mon = 0
-def progerss_monitor(conn):
+def progerss_monitor(conn, port_count: int):
     global prog_mon
     prog_mon = 0
     while True:
         prog_mon_tmp = prog_mon
         time.sleep(1)
         if prog_mon == prog_mon_tmp:
-            for i in range(65536-prog_mon):
+            for i in range(port_count-prog_mon):
                 try:
                     conn.send(1)
                 except BrokenPipeError:
@@ -52,35 +53,39 @@ def progerss_monitor(conn):
 
 
 is_recving = False
-def scanner(udp_skt: socket.socket, addr: str, interval: float, threads: int):
+def scanner(udp_skt: socket.socket, addr: str, interval: float, threads: int, port_start: int, port_count: int):
     global is_recving, prog_mon
-    pbar = tqdm(iterable=range(65536), desc="Scaning progress",
+    pbar = tqdm(iterable=range(port_count), desc="Scaning progress",
                 leave=False, unit="Port", unit_scale=False)
-    
+
+    pbar.write(f"Scanning: {addr}")
+
     if not is_recving:
         is_recving = True
         threading.Thread(target=recv_packets, args=(
             udp_skt, pbar), daemon=True).start()
-        
-    port_ranges = split_list(65536, threads)
+
+    port_ranges = split_list(port_count, threads)
 
     parent_conn, child_conn = mp.Pipe()
 
     threading.Thread(target=progerss_monitor, args=(
-        child_conn,), daemon=True).start()
+        child_conn, port_count), daemon=True).start()
 
     for port_range in port_ranges:
         mp.Process(target=send_packet, args=(udp_skt, addr,
-                   port_range, interval, child_conn), daemon=True).start()
-        
+                   port_range, port_start, interval, child_conn), daemon=True).start()
+
     for p in pbar:
         parent_conn.recv()
         prog_mon += 1
 
-    time.sleep(3)
+    time.sleep(1)
+
+    pbar.close()
 
 
-def recv_packets(udp_skt, pbar):
+def recv_packets(udp_skt, pbar: tqdm):
     server_count = 0
     while True:
         try:
@@ -101,6 +106,9 @@ def recv_packets(udp_skt, pbar):
                       f"[Count  ] {server_count}",
                       ""]
             pbar.write("\n".join(values))
+            os.makedirs("scan-result", exist_ok=True)
+            with open(f"scan-result/{time.strftime('%Y-%d-%m-%H-%M')}.txt", "a+") as file:
+                pbar.write("\n".join(values), file)
             if exec_cmd:
                 threading.Thread(target=exec_cmd_async, args=(exec_cmd, infos), daemon=True).start()
         except socket.timeout:
@@ -141,6 +149,8 @@ if __name__ == "__main__":
                         + "version, online, max_player, unique_id, map, gamemode, source_port_v4, source_port_v6, addr and ip")
     parser.add_argument("-v6", "--use-ipv6", action="store_true", default=False, 
                         help="use IPv6 instead of IPv4")
+    parser.add_argument("-r", "--port-range", default="1-65535", type=str,
+                        help="port range to scan, format: start-end")
 
     args, unparsed = parser.parse_known_args()
 
@@ -151,8 +161,9 @@ if __name__ == "__main__":
     exec_cmd = args.exec_cmd
     use_ipv6 = args.use_ipv6
     threads = args.threads
+    port_range = args.port_range.split("-")
 
     udp_skt = get_udp_socket(local_port, use_ipv6=use_ipv6)
 
     for addr in get_ip_list(addr):
-        scanner(udp_skt, addr, interval, threads)
+        scanner(udp_skt, addr, interval, threads, int(port_range[0]), int(port_range[1]) - int(port_range[0]))
